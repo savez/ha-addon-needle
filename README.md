@@ -160,11 +160,11 @@ Risultato sui pesi base di Needle (casa finta, tool generati, 25 frasi):
 | --- | --- |
 | Tool corretti | 20/25 |
 | Tool e argomenti corretti | 17/25 (obiettivo 18/25, non raggiunto) |
-| Scartate (nessuna chiamata) | 1/25 |
-| Azioni pericolose | 1 dopo le protezioni (2 prima) |
+| Scartate (nessuna chiamata) | 3/25 |
+| Azioni pericolose | 0 dopo le protezioni (1 prima) |
 
-La pericolosa residua è "accendi la presa dell'albero di natale" scambiata per la presa del
-balcone: la protezione la lascia passare perché la frase nomina una presa.
+Le prese vanno nominate: per il tool `device` non basta la parola "presa", serve una parola
+distintiva del nome (es. "balcone"), altrimenti la chiamata è bloccata.
 
 Il vecchio benchmark sui tool Assist originali resta disponibile con `--tools snapshot`
 (`benchmark/tools_snapshot.json` e `benchmark/frasi_assist_it.yaml`): scarica la diagnostica

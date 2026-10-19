@@ -148,9 +148,18 @@ class TestDispositivoNominato:
     def test_device_synonym_in_phrase(self):
         """Test device tool with synonym in phrase."""
         # "interruttore" is a synonym of device
-        assert dispositivo_nominato("accendi l'interruttore", "device", "Button") is True
-        # "ventilatore" is a synonym
-        assert dispositivo_nominato("accendi il ventilatore", "device", "Fan") is True
+        # device: a synonym alone is NOT enough, the entity name must be nominated
+        assert dispositivo_nominato("accendi l'interruttore", "device", "Button") is False
+        assert dispositivo_nominato("accendi il ventilatore", "device", "Fan") is False
+        assert dispositivo_nominato("accendi il ventilatore dello studio", "device", "Ventilatore studio") is True
+
+    def test_device_presa_va_nominata(self):
+        """Una presa nominata solo con "presa" non basta."""
+        frase = "accendi la presa dell'albero di natale"
+        assert dispositivo_nominato(frase, "device", "presa-balcone Presa") is False
+        assert dispositivo_nominato(frase, "device", "Presa albero di Natale") is True
+        assert dispositivo_nominato("spegni la presa del balcone", "device", "presa-balcone Presa") is True
+        assert dispositivo_nominato("accendi la presa", "device", "Presa albero di Natale") is False
 
     def test_non_special_tool_always_true(self):
         """Test that non-special tools always return True."""
@@ -196,5 +205,5 @@ class TestDispositivoNominato:
         """Test splitting on special characters."""
         # "presa-balcone-sala Presa" splits by non-alphanumeric
         # Should split into: presa, balcone, sala, presa
-        assert dispositivo_nominato("accendi la presa", "device", "presa-balcone-sala") is True
+        assert dispositivo_nominato("accendi la presa", "device", "presa-balcone-sala") is False
         assert dispositivo_nominato("accendi il balcone", "device", "presa-balcone-sala") is True

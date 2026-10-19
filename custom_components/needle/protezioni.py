@@ -139,6 +139,24 @@ def dispositivo_nominato(
         if len(w) >= 3
     )
 
+    if tool == "device" and nome_entita:
+        # A synonym alone ("presa") is not enough: a word of the entity name that is
+        # not a synonym must be nominated. Names made only of synonyms fall through
+        # to the generic rule below.
+        sinonimi = {
+            _strip_accents(syn.lower()) for syns in SINONIMI_IT.values() for syn in syns
+        }
+        nome_words = {
+            w
+            for w in re.split(
+                r"[^a-z0-9]+", _strip_accents(_normalize_apostrophes(nome_entita.lower()))
+            )
+            if len(w) >= 3
+        }
+        distintive = nome_words - sinonimi
+        if distintive:
+            return bool(distintive & phrase_words)
+
     # Check tool synonyms
     if tool in SINONIMI_IT:
         for synonym in SINONIMI_IT[tool]:
