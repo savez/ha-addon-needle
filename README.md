@@ -79,6 +79,22 @@ L'add-on ha una sola opzione: `log_level` (`debug`, `info`, `warning`, `error`).
   raggiungibili.
 - Le frasi condizionali non eseguono azioni se lo stato non è stato letto prima (vedi sotto).
 
+## Domande sullo stato
+
+Per le domande ("quanto è la temperatura in camera?", "la luce del bagno è accesa?") Needle
+sceglie la lettura dello stato e ne estrae le parole chiave. L'integrazione poi:
+
+- **cerca a parole**: legge tutte le entità esposte e tiene quelle che contengono più
+  parole della richiesta in nome, alias o area. Contano anche il tipo di sensore e il dominio
+  ("temperatura", "umidità", "luce"…). Il filtro di Home Assistant vorrebbe il nome intero:
+  così invece "umidità cameretta" trova "cameretta Umidità";
+- **esegue le letture scartate**: quando Needle è poco sicuro scarta la chiamata. Se la
+  chiamata scartata è una lettura, l'integrazione la esegue comunque, perché leggere non
+  cambia nulla in casa. Le **azioni** scartate restano scartate.
+
+Le frasi con un verbo funzionano meglio ("dimmi la temperatura della cameretta") di quelle
+senza ("temperatura cameretta"). Gli alias delle entità aiutano la ricerca.
+
 ## Frasi condizionali
 
 Una frase come "se la luce del bagno è spenta accendi quella della camera" va eseguita in due

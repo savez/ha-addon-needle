@@ -7,9 +7,8 @@ import json
 import re
 from typing import Any
 
-import yaml
-
 from .convert import base_name
+from .ricerca import parse_live_context
 
 NON_DOMOTICA = "Non ho capito, posso aiutarti solo con i dispositivi di casa."
 ERRORE_INTERNO = "Errore interno di Needle."
@@ -125,7 +124,8 @@ def _descrivi_letture(outcomes: list[ToolOutcome]) -> str | None:
         if outcome.error:
             continue
         if base_name(outcome.name) == "GetLiveContext":
-            descrizioni.extend(_descrivi_entita(e) for e in _parse_live_context(outcome.data))
+            _, entities = parse_live_context(outcome.data)
+            descrizioni.extend(_descrivi_entita(e) for e in entities)
         elif base_name(outcome.name) == "GetDateTime":
             if ora := _ora(outcome.data):
                 descrizioni.append(f"Sono le {ora}")
@@ -142,17 +142,6 @@ def _descrivi_letture(outcomes: list[ToolOutcome]) -> str | None:
 
 def _ora(data: dict[str, Any]) -> str:
     return ":".join(str(data.get("time") or "").split(":")[:2]) if data.get("time") else ""
-
-
-def _parse_live_context(data: dict[str, Any]) -> list[dict[str, Any]]:
-    _, _, body = str(data.get("result") or "").partition("\n")
-    try:
-        parsed = yaml.safe_load(body)
-    except yaml.YAMLError:
-        return []
-    if not isinstance(parsed, list):
-        return []
-    return [item for item in parsed if isinstance(item, dict)]
 
 
 def _descrivi_entita(entity: dict[str, Any]) -> str:
