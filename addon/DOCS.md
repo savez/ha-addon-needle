@@ -85,7 +85,7 @@ Impostazioni → Dispositivi e servizi → Needle Local AI → **Configura**:
 | "Impossibile raggiungere l'add-on" durante la configurazione | add-on fermo o modello ancora in download; URL con nome host sbagliato |
 | Le risposte iniziano con "⚠️ Needle non risponde" | add-on fermo, in caricamento o troppo lento: controlla il log o aumenta il timeout |
 | "Non trovo il dispositivo o non è esposto ad Assist" | entità non esposta, oppure Needle ha scelto un nome sbagliato |
-| "Non ho capito, posso aiutarti solo con i dispositivi di casa" | Needle non ha proposto nessun tool per la frase |
+| "Non ho capito, posso aiutarti solo con i dispositivi di casa" | Needle non ha proposto nessun tool per la frase, o ha scartato un'azione perché poco sicuro: riformula con un verbo ("dimmi la temperatura della camera") |
 | "Non riesco ancora a verificare le condizioni" | frase condizionale ("se … allora …") bloccata per sicurezza: dai il comando direttamente |
 
 ### Log di debug

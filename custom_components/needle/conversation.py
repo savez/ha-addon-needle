@@ -25,6 +25,7 @@ from .const import (
     DOMAIN,
 )
 from .convert import base_name, clean_args, drop_ungrounded, needle_tools, read_only_tools
+from .ricerca import filtra_live_context, parole
 from .responses import (
     AVVISO_FALLBACK,
     CONDIZIONE_NON_VERIFICATA,
@@ -136,7 +137,8 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         outcomes: list[ToolOutcome] = []
         for _ in range(max_passi):
             response = await self.entry.runtime_data.infer(tools, turni)
-            tool_inputs = self._tool_inputs(response, schemas, real_names)
+            tool_inputs = self._tool_inputs(response, schemas, real_names, read_only)
+            tool_inputs, termini_needle = _letture_complete(tool_inputs)
             _LOGGER.debug("Passo %d, tool da eseguire: %s", len(turni), tool_inputs)
             if not tool_inputs:
                 break
@@ -153,10 +155,13 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
             async for result in chat_log.async_add_assistant_content(
                 conversation.AssistantContent(agent_id=self.entity_id, tool_calls=tool_inputs)
             ):
+                data = dict(result.result.data)
+                if base_name(result.tool_name) == "GetLiveContext" and not result.result.error:
+                    data = filtra_live_context(data, termini_needle, parole(text))
                 step.append(
                     ToolOutcome(
                         name=result.tool_name,
-                        data=dict(result.result.data),
+                        data=data,
                         error=result.result.error,
                         read_only=result.tool_name in read_only,
                     )
@@ -179,19 +184,27 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         response: dict[str, Any],
         schemas: dict[str, dict[str, Any]],
         real_names: dict[str, str],
+        read_only: set[str],
     ) -> list[llm.ToolInput]:
         ungrounded = list((response.get("validation") or {}).get("ungrounded") or [])
+        calls = list(response.get("function_calls") or [])
+        # Needle scarta le chiamate poco sicure. Una lettura non cambia nulla in
+        # casa, quindi la eseguiamo comunque; le azioni scartate restano scartate.
+        letture = {shown for shown, real in real_names.items() if real in read_only}
+        letture_scartate = [
+            call
+            for call in response.get("suppressed_calls") or []
+            if _resolve(str(call.get("name")), schemas) in letture
+        ]
+        if letture_scartate:
+            _LOGGER.debug("Letture scartate da Needle eseguite comunque: %s", letture_scartate)
         inputs: list[llm.ToolInput] = []
         seen: set[tuple[str, str]] = set()
-        for call in response.get("function_calls") or []:
-            name = call.get("name")
-            if name not in schemas:
-                # Needle può usare il nome reale con prefisso (o senza, se ambiguo).
-                candidates = [known for known in schemas if base_name(known) == base_name(str(name))]
-                if len(candidates) != 1:
-                    _LOGGER.debug("Needle ha proposto un tool inesistente: %s", name)
-                    continue
-                name = candidates[0]
+        for call in calls + letture_scartate:
+            name = _resolve(str(call.get("name")), schemas)
+            if name is None:
+                _LOGGER.debug("Needle ha proposto un tool inesistente: %s", call.get("name"))
+                continue
             args = drop_ungrounded(name, dict(call.get("arguments") or {}), ungrounded)
             cleaned = clean_args(args, schemas[name])
             key = (name, json.dumps(cleaned, sort_keys=True, default=str))
@@ -218,6 +231,37 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
             speech = result.response.speech.get("plain", {}).get("speech", "")
             result.response.async_set_speech(f"{AVVISO_FALLBACK} {speech}".strip())
         return result
+
+
+def _resolve(name: str, schemas: dict[str, dict[str, Any]]) -> str | None:
+    """Nome mostrato a Needle; Needle può usare il nome reale con prefisso."""
+    if name in schemas:
+        return name
+    candidates = [known for known in schemas if base_name(known) == base_name(name)]
+    return candidates[0] if len(candidates) == 1 else None
+
+
+def _letture_complete(
+    tool_inputs: list[llm.ToolInput],
+) -> tuple[list[llm.ToolInput], set[str]]:
+    """Toglie i filtri da GetLiveContext e ne restituisce le parole.
+
+    Il filtro di Home Assistant vuole il nome intero; la ricerca a parole
+    sul risultato completo la fa poi filtra_live_context.
+    """
+    termini: set[str] = set()
+    result: list[llm.ToolInput] = []
+    letto = False
+    for tool_input in tool_inputs:
+        if base_name(tool_input.tool_name) != "GetLiveContext":
+            result.append(tool_input)
+            continue
+        args = tool_input.tool_args
+        termini |= parole(" ".join(str(args.get(key) or "") for key in ("name", "area")))
+        if not letto:
+            result.append(llm.ToolInput(tool_name=tool_input.tool_name, tool_args={}))
+            letto = True
+    return result, termini
 
 
 class _CondizioneNonVerificata(Exception):

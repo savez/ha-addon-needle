@@ -41,7 +41,9 @@ async def setup(hass):
     hass.states.async_set("light.cucina", "off", {"friendly_name": "Luce cucina"})
     hass.states.async_set("light.garage", "off", {"friendly_name": "Luce garage"})
     hass.states.async_set("sensor.temp_bagno", "55", {"friendly_name": "Temperatura bagno", "unit_of_measurement": "°C"})
-    for entity_id in ("light.bagno", "light.cucina", "sensor.temp_bagno"):
+    hass.states.async_set("sensor.umido_cameretta", "48", {"friendly_name": "cameretta Umidità", "unit_of_measurement": "%", "device_class": "humidity"})
+    hass.states.async_set("sensor.temp_cameretta", "21", {"friendly_name": "cameretta Temperatura", "unit_of_measurement": "°C", "device_class": "temperature"})
+    for entity_id in ("light.bagno", "light.cucina", "sensor.temp_bagno", "sensor.umido_cameretta", "sensor.temp_cameretta"):
         async_expose_entity(hass, "conversation", entity_id, True)
     async_expose_entity(hass, "conversation", "light.garage", False)
     entry = MockConfigEntry(domain=DOMAIN, data={CONF_URL: "http://needle.test:8765"}, options=dict(DEFAULT_OPTIONS))
@@ -335,3 +337,41 @@ async def test_bad_request_is_internal_error(hass, setup):
     with patch_infer(NeedleBadRequest("bug")):
         speech = await converse(hass, "spegni la luce del bagno")
     assert speech == ERRORE_INTERNO
+
+
+def needle_suppressed(*calls):
+    return {"type": "call", "function_calls": [], "suppressed_calls": list(calls), "confidence": 0.02, "validation": {"ungrounded": []}}
+
+
+async def test_read_matches_words_not_full_name(hass, setup):
+    async def infer(tools, turni):
+        if len(turni) == 1:
+            return needle_reply(call(tool_name(tools, "GetLiveContext"), name="cameretta"))
+        return needle_reply()
+
+    with patch_infer(infer):
+        speech = await converse(hass, "qual è l'umidità della cameretta")
+    assert speech == "cameretta Umidità: 48 %."
+
+
+async def test_suppressed_read_is_executed(hass, setup):
+    async def infer(tools, turni):
+        if len(turni) == 1:
+            return needle_suppressed(call(tool_name(tools, "GetLiveContext"), name="Cameretta", domain=["sensor"]))
+        return needle_reply()
+
+    with patch_infer(infer):
+        speech = await converse(hass, "dimmi il valore di cameretta temperatura")
+    assert speech == "cameretta Temperatura: 21 °C."
+
+
+async def test_suppressed_action_is_not_executed(hass, setup):
+    on = async_mock_service(hass, "light", "turn_on")
+
+    async def infer(tools, turni):
+        return needle_suppressed(call(tool_name(tools, "HassTurnOn"), name="Luce cucina"))
+
+    with patch_infer(infer):
+        speech = await converse(hass, "accendi cucina")
+    assert len(on) == 0
+    assert speech == NON_DOMOTICA
