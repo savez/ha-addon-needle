@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/savez/ha-addon-needle/compare/v0.1.1...v0.1.2) (2026-10-19)
+
+
+### Bug Fixes
+
+* **integrazione:** nomi dei tool senza prefisso e blocco delle condizionali non verificate ([#4](https://github.com/savez/ha-addon-needle/issues/4)) ([967647c](https://github.com/savez/ha-addon-needle/commit/967647c3b04e3a214fa66f6f716874aff24a3902))
+
 ## [0.1.1](https://github.com/savez/ha-addon-needle/compare/v0.1.0...v0.1.1) (2026-10-19)
 
 
