@@ -77,7 +77,11 @@ def _split(valore: Any) -> list[str]:
 
 
 def entita_da_esposte(esposte: dict[str, dict]) -> list[Entita]:
-    """Converte l'output di async_get_exposed_entities in Entita."""
+    """Converte l'output di async_get_exposed_entities in Entita.
+
+    HA costruisce `areas` come "nome area, alias...": un'entità ha una sola area,
+    quindi si tiene solo il primo elemento (gli alias non entrano negli enum).
+    """
     risultato = []
     for entity_id, info in esposte.items():
         nomi = _split(info.get("names"))
@@ -86,7 +90,7 @@ def entita_da_esposte(esposte: dict[str, dict]) -> list[Entita]:
             Entita(
                 entity_id=entity_id,
                 nome=nomi[0] if nomi else entity_id,
-                aree=tuple(_split(info.get("areas"))),
+                aree=tuple(_split(info.get("areas"))[:1]),
                 dominio=info.get("domain") or entity_id.split(".", 1)[0],
                 device_class=attributi.get("device_class"),
             )

@@ -143,6 +143,6 @@ def test_entita_da_esposte():
         },
     }
     assert sorted(entita_da_esposte(esposte), key=lambda e: e.entity_id) == [
-        Entita("light.a", "Luce", ("Bagno", "Corridoio"), "light", None),
+        Entita("light.a", "Luce", ("Bagno",), "light", None),
         Entita("sensor.t", "Temp", (), "sensor", "temperature"),
     ]
