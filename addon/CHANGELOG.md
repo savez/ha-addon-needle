@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/savez/ha-addon-needle/compare/v0.2.0...v0.2.1) (2026-10-19)
+
+
+### Bug Fixes
+
+* letture dello stato con ricerca a parole ed esecuzione delle letture scartate ([#10](https://github.com/savez/ha-addon-needle/issues/10)) ([41b7ab5](https://github.com/savez/ha-addon-needle/commit/41b7ab58cbc35843494692850711340b3d10264b))
+
 ## [0.2.0](https://github.com/savez/ha-addon-needle/compare/v0.1.3...v0.2.0) (2026-10-19)
 
 
