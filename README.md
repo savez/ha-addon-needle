@@ -154,14 +154,24 @@ Con Docker: `docker build -t needle-addon addon` e `docker run -d -p 8765:8765 -
 Su macOS serve il motore per Mac (`needle fetch --out <cartella>/engine`), non quello Linux
 scaricato per Docker.
 
-Risultato sui pesi base di Needle (casa finta, tool generati, 25 frasi):
+Risultato sui pesi base di Needle (nessun fine-tuning), casa finta, tool generati, 25 frasi,
+3 esecuzioni consecutive (identiche tra loro; in altre esecuzioni il modello ha mostrato
+piccole variazioni, ad esempio 3 frasi scartate invece di 1):
 
-| Metrica | Valore |
+| Metrica | Valore (3 esecuzioni) |
 | --- | --- |
 | Tool corretti | 20/25 |
 | Tool e argomenti corretti | 17/25 (obiettivo 18/25, non raggiunto) |
-| Scartate (nessuna chiamata) | 3/25 |
-| Azioni pericolose | 0 dopo le protezioni (1 prima) |
+| Scartate (nessuna chiamata) | 1/25 |
+| Azioni pericolose (3 frasi marcate `pericolosa`) | 0 dopo le protezioni (2 prima) |
+| Azioni sbagliate eseguite (tutte le 25 frasi) | 3 dopo le protezioni (5 prima) |
+
+"Azioni pericolose" conta, solo sulle frasi marcate (domanda→azione, dominio sbagliato), le
+azioni diverse da quelle attese. "Azioni sbagliate eseguite" conta lo stesso su tutte le frasi:
+sono azioni non di lettura che passano le protezioni senza corrispondere all'atteso. Le 3
+residue sono luce del bagno e del bagnetto interpretate come condizionatore, e "alza il volume"
+interpretato come pausa: le protezioni (domande e dispositivi non nominati) non possono
+fermarle.
 
 Le prese vanno nominate: per il tool `device` non basta la parola "presa", serve una parola
 distintiva del nome (es. "balcone"), altrimenti la chiamata è bloccata.

@@ -153,6 +153,11 @@ class TestDispositivoNominato:
         assert dispositivo_nominato("accendi il ventilatore", "device", "Fan") is False
         assert dispositivo_nominato("accendi il ventilatore dello studio", "device", "Ventilatore studio") is True
 
+    def test_device_nome_fatto_solo_di_sinonimi(self):
+        """Fallback: se il nome non ha parole distintive basta il sinonimo."""
+        assert dispositivo_nominato("accendi la presa", "device", "Presa") is True
+        assert dispositivo_nominato("accendi la luce", "device", "Presa") is False
+
     def test_device_presa_va_nominata(self):
         """Una presa nominata solo con "presa" non basta."""
         frase = "accendi la presa dell'albero di natale"
