@@ -65,6 +65,26 @@ Le tre suite vanno lanciate separatamente e devono passare tutte prima di aprire
 4. **Ogni PR richiede l'approvazione del maintainer** prima del merge. I push diretti su
    `main` non sono consentiti.
 
+## Versioni e rilasci
+
+Le versioni seguono [Semantic Versioning](https://semver.org/) e sono gestite da
+[release-please](https://github.com/googleapis/release-please) a partire dai messaggi dei
+commit su `main`:
+
+- `fix:` → versione patch (0.1.0 → 0.1.1)
+- `feat:` → versione minor (0.1.0 → 0.2.0)
+- `feat!:` o `BREAKING CHANGE:` nel corpo → versione major
+- `docs:`, `test:`, `chore:`, `ci:` → nessun rilascio
+
+Dopo ogni merge su `main` release-please apre (o aggiorna) una **Release PR** che porta la
+nuova versione in `addon/config.yaml`, `custom_components/needle/manifest.json` e
+`version.txt` e aggiorna `addon/CHANGELOG.md`. Quando il maintainer la approva e la unisce,
+viene creato il tag `vX.Y.Z` con la release su GitHub, e Home Assistant propone
+l'aggiornamento dell'add-on. Non modificare a mano i numeri di versione.
+
+Il titolo della PR diventa il messaggio del commit (merge "squash"): scrivilo in formato
+Conventional Commits.
+
 ## Linee guida
 
 - Segui lo stile del codice esistente: file piccoli con una responsabilità, nomi chiari.
