@@ -35,3 +35,15 @@ def test_skips_when_present(tmp_path, monkeypatch):
     ensure_assets(tmp_path, run=fake_run_factory(calls))
     assert calls == []
     assert os.environ["NEEDLE3_LIB_PATH"].endswith("libneedle.so")
+
+
+def test_removes_embedding_dir(tmp_path, monkeypatch):
+    monkeypatch.delenv("NEEDLE3_LIB_PATH", raising=False)
+    (tmp_path / "weights").mkdir()
+    (tmp_path / "weights" / WEIGHTS_NAME).touch()
+    (tmp_path / "engine").mkdir()
+    (tmp_path / "engine" / "libneedle.so").touch()
+    (tmp_path / "embedding").mkdir()
+    (tmp_path / "embedding" / "x.gguf").touch()
+    ensure_assets(tmp_path, run=fake_run_factory([]))
+    assert not (tmp_path / "embedding").exists()

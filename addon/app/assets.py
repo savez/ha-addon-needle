@@ -21,6 +21,10 @@ NEEDLE_CLI = shutil.which("needle") or str(Path(sys.executable).with_name("needl
 
 
 def ensure_assets(data_dir: Path, run: Callable[..., Any] = subprocess.run) -> Path:
+    embedding_dir = data_dir / "embedding"
+    if embedding_dir.exists():
+        _LOGGER.info("Rimuovo il modello di embedding non più usato in %s", embedding_dir)
+        shutil.rmtree(embedding_dir, ignore_errors=True)
     weights_dir = data_dir / "weights"
     engine_dir = data_dir / "engine"
     weights = weights_dir / WEIGHTS_NAME
