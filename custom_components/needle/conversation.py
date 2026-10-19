@@ -100,7 +100,11 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         try:
             outcomes = await self._async_run_loop(user_input.text, chat_log)
         except NeedleUnavailable as err:
-            _LOGGER.warning("Needle non risponde (%s): uso l'agente standard", err)
+            _LOGGER.warning(
+                "Needle non risponde su %s (%s): uso l'agente standard",
+                self.entry.runtime_data.url,
+                err,
+            )
             return await self._async_fallback(user_input)
         except NeedleBadRequest as err:
             _LOGGER.error("L'add-on ha rifiutato la richiesta: %s", err)
@@ -110,6 +114,7 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         else:
             speech = build_response(user_input.text, _unique(outcomes))
 
+        _LOGGER.debug("Frase %r, risposta %r", user_input.text, speech)
         chat_log.async_add_assistant_content_without_tools(
             conversation.AssistantContent(agent_id=self.entity_id, content=speech)
         )
@@ -132,6 +137,7 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         for _ in range(max_passi):
             response = await self.entry.runtime_data.infer(tools, turni)
             tool_inputs = self._tool_inputs(response, schemas, real_names)
+            _LOGGER.debug("Passo %d, tool da eseguire: %s", len(turni), tool_inputs)
             if not tool_inputs:
                 break
             if (
@@ -155,6 +161,7 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
                         read_only=result.tool_name in read_only,
                     )
                 )
+            _LOGGER.debug("Risultati: %s", step)
             outcomes.extend(step)
             if any(not outcome.read_only for outcome in step):
                 # Un'azione è stata eseguita: non chiediamo altro a Needle,

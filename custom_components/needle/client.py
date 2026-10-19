@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import logging
+import time
 from typing import Any
 
 import aiohttp
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class NeedleError(Exception):
@@ -36,7 +41,13 @@ class NeedleClient:
         except (aiohttp.ClientError, TimeoutError) as err:
             raise NeedleUnavailable(str(err) or type(err).__name__) from err
 
+    @property
+    def url(self) -> str:
+        return self._url
+
     async def infer(self, tools: list[dict[str, Any]], turni: list[str]) -> dict[str, Any]:
+        _LOGGER.debug("POST %s/v1/infer: %d tool, turni=%s", self._url, len(tools), turni)
+        start = time.monotonic()
         try:
             async with self._session.post(
                 f"{self._url}/v1/infer",
@@ -47,6 +58,17 @@ class NeedleClient:
                     raise NeedleBadRequest(await resp.text())
                 if resp.status != 200:
                     raise NeedleUnavailable(f"infer HTTP {resp.status}")
-                return await resp.json()
+                result: dict[str, Any] = await resp.json()
         except (aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.debug(
+                "Chiamata fallita dopo %d ms: %r",
+                int((time.monotonic() - start) * 1000),
+                err,
+            )
             raise NeedleUnavailable(str(err) or type(err).__name__) from err
+        _LOGGER.debug(
+            "Risposta in %d ms: %s",
+            int((time.monotonic() - start) * 1000),
+            json.dumps(result, ensure_ascii=False, default=str),
+        )
+        return result

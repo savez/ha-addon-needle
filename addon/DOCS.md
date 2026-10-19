@@ -88,8 +88,20 @@ Impostazioni → Dispositivi e servizi → Needle Local AI → **Configura**:
 | "Non ho capito, posso aiutarti solo con i dispositivi di casa" | Needle non ha proposto nessun tool per la frase |
 | "Non riesco ancora a verificare le condizioni" | frase condizionale ("se … allora …") bloccata per sicurezza: dai il comando direttamente |
 
-Per i dettagli imposta `log_level: debug` in questo add-on e il logger
-`custom_components.needle` a `debug` in Home Assistant.
+### Log di debug
+
+All'avvio l'add-on scrive nel log l'URL da usare nell'integrazione
+(`URL da usare nell'integrazione: http://…:8765`): se l'hai installato dal
+repository il nome host non è `local-needle`.
+
+Per vedere ogni richiesta imposta **`log_level: debug`** nella configurazione
+di questo add-on e riavvialo. Per ogni frase il log mostra i tool ricevuti, i
+turni (la frase e i risultati delle letture), la risposta di Needle e i tempi.
+Con `info` (default) questi dettagli non vengono scritti.
+
+Se il log resta vuoto quando parli ad Assist, la richiesta non arriva
+all'add-on: di solito l'URL dell'integrazione è sbagliato. Per i dettagli lato
+Home Assistant usa **Attiva il debug** nella pagina dell'integrazione.
 
 Il progetto è sperimentale: con il modello base l'accuratezza è ancora bassa. Documentazione
 completa, benchmark e segnalazioni: <https://github.com/savez/ha-addon-needle>.
