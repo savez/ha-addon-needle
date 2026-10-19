@@ -54,7 +54,7 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         self._attr_unique_id = entry.entry_id
         self._attr_device_info = dr.DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name="Needle",
+            name="Needle Local AI",
             manufacturer="Cactus Compute",
             model="Needle 3",
             entry_type=dr.DeviceEntryType.SERVICE,

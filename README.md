@@ -1,4 +1,4 @@
-# Needle per Home Assistant
+# Needle Local AI
 
 > **English summary** — A **local** conversation agent for Home Assistant Assist, like the
 > Gemini integration but running the tiny [Needle 3](https://cactuscompute.com/needle)
@@ -25,9 +25,9 @@ Assist ──► integrazione Needle ──(frase + tool)──► add-on Needle
        Home Assistant esegue le azioni sulle entità esposte ad Assist
 ```
 
-- **Add-on Needle**: fa solo inferenza. Riceve la frase e i tool di Assist, restituisce le
+- **Add-on Needle Local AI**: fa solo inferenza. Riceve la frase e i tool di Assist, restituisce le
   chiamate ai tool. Non ha accesso a Home Assistant e non espone porte sull'host.
-- **Integrazione Needle**: è l'agente di Assist. Usa l'API LLM "Assist" di Home Assistant
+- **Integrazione Needle Local AI**: è l'agente di Assist. Usa l'API LLM "Assist" di Home Assistant
   (gli stessi tool che usa Gemini), lascia che sia Home Assistant a eseguirli e costruisce
   la risposta in italiano. Per le frasi condizionali legge prima lo stato e poi decide.
 - Se l'add-on non risponde, la frase passa all'agente standard di Home Assistant (con un
@@ -44,16 +44,16 @@ Assist ──► integrazione Needle ──(frase + tool)──► add-on Needle
 ## Installazione
 
 1. **Add-on**: Impostazioni → Add-on → Store → ⋮ → Repository → aggiungi
-   `https://github.com/savez/ha-addon-needle`, installa **Needle** e avvialo. Al primo avvio
+   `https://github.com/savez/ha-addon-needle`, installa **Needle Local AI** e avvialo. Al primo avvio
    scarica il modello: attendi nel log il messaggio "Modello Needle pronto".
 2. **Integrazione**: con HACS aggiungi questo repository come *Integration* (repository
    personalizzato), oppure copia `custom_components/needle/` in `config/custom_components/`.
    Riavvia Home Assistant.
-3. Impostazioni → Dispositivi e servizi → Aggiungi integrazione → **Needle**. L'URL di default
+3. Impostazioni → Dispositivi e servizi → Aggiungi integrazione → **Needle Local AI**. L'URL di default
    è `http://local-needle:8765` (add-on installato in locale); se hai installato l'add-on da
    questo repository il nome host è diverso: lo trovi nella pagina dell'add-on (campo
    *Hostname*), usa `http://<hostname>:8765`.
-4. Impostazioni → Assistenti vocali → il tuo assistente → **Agente di conversazione: Needle**.
+4. Impostazioni → Assistenti vocali → il tuo assistente → **Agente di conversazione: Needle Local AI**.
    Lascia **disattivato** "Preferisci gestire i comandi localmente": così ogni frase passa da Needle.
 5. Scegli quali entità esporre ad Assist (Impostazioni → Assistenti vocali → Esponi): Needle
    può comandare e leggere solo quelle.

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "59e5b2887839a263e0b5dee6fbce4b2589e0a14e",
+  "include-component-in-tag": false,
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "ha-addon-needle",
+      "changelog-path": "addon/CHANGELOG.md",
+      "extra-files": [
+        { "type": "yaml", "path": "addon/config.yaml", "jsonpath": "$.version" },
+        { "type": "json", "path": "custom_components/needle/manifest.json", "jsonpath": "$.version" }
+      ]
+    }
+  }
+}

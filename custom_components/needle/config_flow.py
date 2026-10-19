@@ -60,7 +60,7 @@ class NeedleConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
             else:
                 return self.async_create_entry(
-                    title="Needle", data={CONF_URL: url}, options=dict(DEFAULT_OPTIONS)
+                    title="Needle Local AI", data={CONF_URL: url}, options=dict(DEFAULT_OPTIONS)
                 )
         return self.async_show_form(
             step_id="user",
