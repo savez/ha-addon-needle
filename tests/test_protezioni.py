@@ -255,6 +255,8 @@ class TestDominioCoerente:
             ("accendi la luce del bagno", "vacuum", True),
             ("abbassa la tapparella", "blinds", True),
             ("accendi la lampada", "lights", True),
+            ("alza la temperatura a 22", "air_conditioner", True),
+            ("abbassa il riscaldamento", "air_conditioner", True),
         ],
     )
     def test_dominio(self, frase, tool, atteso):

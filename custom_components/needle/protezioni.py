@@ -107,8 +107,6 @@ PAROLE_DOMINIO_IT: dict[str, frozenset[str]] = {
             "riprendi",
             "avanti",
             "indietro",
-            "alza",
-            "abbassa",
         }
     ),
 }
