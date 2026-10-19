@@ -542,6 +542,28 @@ async def test_wrong_domain_blocked(hass, setup):
     assert speech == DISPOSITIVO_INCERTO
 
 
+async def test_device_with_domain_list_and_set_position(hass, setup):
+    registry = er.async_get(hass)
+    registry.async_get_or_create("cover", "test", "bagno", suggested_object_id="bagno", original_name="Tapparella bagno")
+    bagno = ar.async_get(hass).async_get_area_by_name("Bagno")
+    registry.async_update_entity("cover.bagno", area_id=bagno.id)
+    hass.states.async_set("switch.caffe", "off", {"friendly_name": "Presa caffè"})
+    hass.states.async_set("cover.bagno", "closed", {"friendly_name": "Tapparella bagno", "supported_features": 4})
+    for entity_id in ("switch.caffe", "cover.bagno"):
+        async_expose_entity(hass, "conversation", entity_id, True)
+    on = async_mock_service(hass, "switch", "turn_on")
+    position = async_mock_service(hass, "cover", "set_cover_position")
+
+    with patch_infer(lambda tools, turni: needle_reply(call("device", name="Presa caffè", state="on"))):
+        speech = await converse(hass, "accendi la presa caffè")
+    assert [c.data["entity_id"] for c in on] == [["switch.caffe"]]
+    assert speech == "Ho acceso Presa caffè."
+
+    with patch_infer(lambda tools, turni: needle_reply(call("blinds", room="Bagno", position=30))):
+        await converse(hass, "tapparella del bagno al 30")
+    assert [c.data["entity_id"] for c in position] == ["cover.bagno"]
+
+
 async def test_generated_suppressed_read_is_executed(hass, setup):
     async def infer(tools, turni):
         if len(turni) == 1:

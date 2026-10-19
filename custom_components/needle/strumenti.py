@@ -249,16 +249,18 @@ def genera_strumenti(entita: list[Entita], intent_disponibili: set[str]) -> list
         azioni = [a for a, intent in _VACUUM_AZIONI if intent in intent_disponibili]
         if azioni:
             proprieta = {"action": _stringa("Desired action", azioni)}
+            richiesti = ["action"]
             if len(aspirapolveri) > 1:
                 nomi = _limita([e.nome for e in aspirapolveri], "vacuum", "name")
                 proprieta["name"] = _stringa("Vacuum name", nomi)
+                richiesti.append("name")
             tools.append(
                 _tool(
                     "vacuum",
                     "Start the robot vacuum cleaner or send it back to its base, e.g. "
                     "'start the vacuum', 'clean the house', 'send the robot back to the dock'.",
                     proprieta,
-                    ["action"],
+                    richiesti,
                 )
             )
 

@@ -31,6 +31,8 @@ _MEDIA = {
 }
 _VACUUM = {"start": "HassVacuumStart", "return_to_base": "HassVacuumReturnToBase"}
 _ON_OFF = {"on": "HassTurnOn", "off": "HassTurnOff"}
+# Domini del tool "device": devono coincidere con strumenti._DEVICE_DOMINI (verificato nei test).
+DOMINI_DEVICE = ("switch", "fan", "input_boolean")
 
 
 def e_lettura(nome_tool: str) -> bool:
@@ -138,7 +140,9 @@ def traduci(
             return []
         if "position" in a:
             return _chiamata(
-                "HassSetPosition", ok, **_con_area(area, {"position": a["position"]})
+                "HassSetPosition",
+                ok,
+                **_con_area(area, {"position": a["position"], "domain": ["cover"]}),
             )
         intent = {"open": "HassTurnOn", "close": "HassTurnOff"}.get(a.get("action"))
         if intent:
@@ -151,7 +155,9 @@ def traduci(
 
     if nome == "device":
         if "name" in a and stato in _ON_OFF:
-            return _chiamata(_ON_OFF[stato], ok, name=a["name"])
+            return _chiamata(
+                _ON_OFF[stato], ok, name=a["name"], domain=list(DOMINI_DEVICE)
+            )
         return []
 
     if nome == "vacuum":

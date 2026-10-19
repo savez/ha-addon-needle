@@ -87,9 +87,9 @@ def _uno(tool, /, **args):
         ("blinds", {"room": "Camera", "action": "close"},
          _uno("HassTurnOff", area="Camera", domain=["cover"])),
         ("blinds", {"room": "Camera", "position": 30},
-         _uno("HassSetPosition", area="Camera", position=30)),
+         _uno("HassSetPosition", area="Camera", position=30, domain=["cover"])),
         ("blinds", {"room": "Camera", "action": "open", "position": 30},
-         _uno("HassSetPosition", area="Camera", position=30)),
+         _uno("HassSetPosition", area="Camera", position=30, domain=["cover"])),
         ("media", {"action": "pause"}, _uno("HassMediaPause")),
         ("media", {"action": "resume"}, _uno("HassMediaUnpause")),
         ("media", {"action": "next"}, _uno("HassMediaNext")),
@@ -97,9 +97,9 @@ def _uno(tool, /, **args):
         ("media", {"action": "louder"}, _uno("HassSetVolumeRelative", volume_step="up")),
         ("media", {"action": "quieter"}, _uno("HassSetVolumeRelative", volume_step="down")),
         ("device", {"name": "Macchina caffè", "state": "on"},
-         _uno("HassTurnOn", name="Macchina caffè")),
+         _uno("HassTurnOn", name="Macchina caffè", domain=["switch", "fan", "input_boolean"])),
         ("device", {"name": "Macchina caffè", "state": "off"},
-         _uno("HassTurnOff", name="Macchina caffè")),
+         _uno("HassTurnOff", name="Macchina caffè", domain=["switch", "fan", "input_boolean"])),
         ("vacuum", {"action": "start"}, _uno("HassVacuumStart")),
         ("vacuum", {"action": "return_to_base", "name": "Robot"},
          _uno("HassVacuumReturnToBase", name="Robot")),
@@ -160,6 +160,12 @@ def test_letture_in_sync_with_strumenti():
     assert LETTURE["get_time"] is None
     assert e_lettura("get_temperature") and e_lettura("get_time")
     assert not e_lettura("lights")
+
+
+def test_domini_device_in_sync_with_strumenti():
+    from custom_components.needle import strumenti, traduzione
+
+    assert tuple(traduzione.DOMINI_DEVICE) == strumenti._DEVICE_DOMINI
 
 
 LIVE = (

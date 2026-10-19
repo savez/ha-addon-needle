@@ -90,10 +90,12 @@ def test_vacuum_name_only_when_several():
     one = [Entita("vacuum.a", "Robo", (), "vacuum", None)]
     tools = _by_name(genera_strumenti(one, {"HassVacuumStart"}))
     assert "name" not in tools["vacuum"]["parameters"]["properties"]
+    assert tools["vacuum"]["parameters"]["required"] == ["action"]
     assert _enum(tools["vacuum"], "action") == ["start"]
     two = one + [Entita("vacuum.b", "Aspira", (), "vacuum", None)]
     tools = _by_name(genera_strumenti(two, {"HassVacuumStart", "HassVacuumReturnToBase"}))
     assert _enum(tools["vacuum"], "name") == ["Aspira", "Robo"]
+    assert tools["vacuum"]["parameters"]["required"] == ["action", "name"]
     assert _enum(tools["vacuum"], "action") == ["start", "return_to_base"]
 
 
