@@ -37,7 +37,15 @@ VERBI = {
     "HassMediaPause": "Ho messo in pausa",
     "HassMediaUnpause": "Ho ripreso",
     "HassSetVolume": "Ho impostato il volume di",
+    "HassSetVolumeRelative": "Ho cambiato il volume di",
+    "HassMediaNext": "Ho saltato al brano successivo su",
+    "HassMediaPrevious": "Ho rimesso il brano precedente su",
+    "HassVacuumStart": "Ho avviato",
+    "HassVacuumReturnToBase": "Ho mandato alla base",
 }
+
+# Solo le entità e i dispositivi si nominano nella risposta (non aree o domini).
+_TIPI_NOMINATI = {"entity", "device"}
 
 STATI = {
     "on": "acceso",
@@ -123,7 +131,11 @@ def _descrivi_azione(outcome: ToolOutcome) -> str:
         if data.get("error") in _ERRORI_DISPOSITIVO:
             return ERRORE_DISPOSITIVO
         return ERRORE_GENERICO
-    nomi = [t["name"] for t in (data.get("data") or {}).get("success", []) if t.get("name")]
+    nomi = [
+        t["name"]
+        for t in (data.get("data") or {}).get("success", [])
+        if t.get("name") and t.get("type") in _TIPI_NOMINATI
+    ]
     verbo = VERBI.get(base_name(outcome.name))
     if verbo and nomi:
         return f"{verbo} {', '.join(nomi)}."

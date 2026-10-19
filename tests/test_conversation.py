@@ -425,8 +425,7 @@ async def test_lights_command(hass, setup):
     with patch_infer(infer):
         speech = await converse(hass, "accendi la luce del bagno")
     assert [c.data["entity_id"] for c in on] == [["light.bagno"]]
-    assert speech.startswith("Ho acceso")
-    assert "Luce bagno" in speech
+    assert speech == "Ho acceso Luce bagno."
 
 
 async def test_get_temperature(hass, setup):

@@ -1,6 +1,8 @@
 """Test della risposta parlata."""
 import json
 
+import pytest
+
 from custom_components.needle.responses import (
     is_condizionale,
     ERRORE_DISPOSITIVO,
@@ -145,3 +147,37 @@ def test_is_condizionale():
     assert is_condizionale("  Qualora faccia freddo accendi il riscaldamento")
     assert not is_condizionale("quando si è accesa la luce?")
     assert not is_condizionale("accendi la luce se puoi")
+
+
+def test_area_targets_not_spoken():
+    out = ToolOutcome(
+        name="HassTurnOn",
+        data={
+            "response_type": "action_done",
+            "data": {
+                "success": [
+                    {"name": "Bagno", "type": "area", "id": "bagno"},
+                    {"name": "Luce bagno", "type": "entity", "id": "light.bagno"},
+                    {"name": "Lampadario", "type": "device", "id": "d1"},
+                ],
+                "failed": [],
+            },
+        },
+        error=False,
+        read_only=False,
+    )
+    assert build_response("accendi la luce del bagno", [out]) == "Ho acceso Luce bagno, Lampadario."
+
+
+@pytest.mark.parametrize(
+    ("intent", "atteso"),
+    [
+        ("HassVacuumStart", "Ho avviato Robot."),
+        ("HassVacuumReturnToBase", "Ho mandato alla base Robot."),
+        ("HassMediaNext", "Ho saltato al brano successivo su Robot."),
+        ("HassMediaPrevious", "Ho rimesso il brano precedente su Robot."),
+        ("HassSetVolumeRelative", "Ho cambiato il volume di Robot."),
+    ],
+)
+def test_verbi_nuovi(intent, atteso):
+    assert build_response("x", [action(intent, ["Robot"])]) == atteso
