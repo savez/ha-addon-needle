@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/savez/ha-addon-needle/compare/v0.1.3...v0.2.0) (2026-10-19)
+
+
+### Features
+
+* log di debug delle richieste e URL dell'add-on all'avvio ([#8](https://github.com/savez/ha-addon-needle/issues/8)) ([2ead27c](https://github.com/savez/ha-addon-needle/commit/2ead27c0fd73602361f5751230eb9a7279d3e09e))
+
 ## [0.1.3](https://github.com/savez/ha-addon-needle/compare/v0.1.2...v0.1.3) (2026-10-19)
 
 
