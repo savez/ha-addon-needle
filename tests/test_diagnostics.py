@@ -22,4 +22,5 @@ async def test_diagnostics_exports_tools(hass):
     names = [tool["name"] for tool in result["tools"]]
     assert any(name.endswith("HassTurnOn") for name in names)
     assert any(name.endswith("GetLiveContext") for name in names)
+    assert not any("__" in name for name in names)
     assert result["options"]["max_passi"] == 5

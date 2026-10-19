@@ -11,7 +11,7 @@ from homeassistant.helpers import llm
 
 from . import NeedleConfigEntry
 from .const import DEFAULT_LLM_API, DOMAIN
-from .convert import format_tools
+from .convert import needle_tools
 
 
 async def async_get_config_entry_diagnostics(
@@ -30,5 +30,5 @@ async def async_get_config_entry_diagnostics(
                 device_id=None,
             ),
         )
-        tools = format_tools(api)
+        tools, _ = needle_tools(api)
     return {"options": dict(entry.options), "tools": tools}

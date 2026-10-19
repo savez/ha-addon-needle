@@ -10,6 +10,7 @@ from custom_components.needle.convert import (
     clean_args,
     drop_ungrounded,
     format_tools,
+    needle_tools,
     read_only_tools,
 )
 
@@ -93,3 +94,25 @@ def test_drop_ungrounded_prefixed_tool_name():
     args = {"name": "x", "device_class": "x"}
     result = drop_ungrounded("intent__HassTurnOff", args, ["intent__HassTurnOff.device_class"])
     assert result == {"name": "x"}
+
+
+def test_needle_tools_strips_unique_prefixes():
+    api = SimpleNamespace(
+        tools=[_tool("intent__HassTurnOff"), _tool("homeassistant__GetLiveContext", read_only=True)],
+        custom_serializer=llm.selector_serializer,
+    )
+    tools, real_names = needle_tools(api)
+    assert [t["name"] for t in tools] == ["HassTurnOff", "GetLiveContext"]
+    assert real_names == {"HassTurnOff": "intent__HassTurnOff", "GetLiveContext": "homeassistant__GetLiveContext"}
+    assert tools[0]["parameters"] == format_tools(api)[0]["parameters"]
+
+
+def test_needle_tools_keeps_prefix_on_collision():
+    api = SimpleNamespace(
+        tools=[_tool("light__HassTurnOn"), _tool("intent__HassTurnOn"), _tool("intent__HassTurnOff")],
+        custom_serializer=llm.selector_serializer,
+    )
+    tools, real_names = needle_tools(api)
+    assert [t["name"] for t in tools] == ["light__HassTurnOn", "intent__HassTurnOn", "HassTurnOff"]
+    assert real_names["HassTurnOff"] == "intent__HassTurnOff"
+    assert real_names["light__HassTurnOn"] == "light__HassTurnOn"

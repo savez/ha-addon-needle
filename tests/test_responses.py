@@ -2,6 +2,7 @@
 import json
 
 from custom_components.needle.responses import (
+    is_condizionale,
     ERRORE_DISPOSITIVO,
     ERRORE_GENERICO,
     NON_DOMOTICA,
@@ -137,3 +138,10 @@ def test_successful_read_without_description_is_fatto():
 def test_quando_question_is_plain_answer():
     result = build_response("quando si è accesa la luce del bagno?", [live(LUCE_ON)])
     assert result == "Luce bagno: acceso."
+
+
+def test_is_condizionale():
+    assert is_condizionale("se la luce del bagno è spenta accendi la camera")
+    assert is_condizionale("  Qualora faccia freddo accendi il riscaldamento")
+    assert not is_condizionale("quando si è accesa la luce?")
+    assert not is_condizionale("accendi la luce se puoi")

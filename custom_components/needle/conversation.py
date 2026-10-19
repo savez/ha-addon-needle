@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 import logging
 from typing import Any, Literal, override
@@ -23,12 +24,14 @@ from .const import (
     DEFAULT_MOSTRA_AVVISO,
     DOMAIN,
 )
-from .convert import base_name, clean_args, drop_ungrounded, format_tools, read_only_tools
+from .convert import base_name, clean_args, drop_ungrounded, needle_tools, read_only_tools
 from .responses import (
     AVVISO_FALLBACK,
+    CONDIZIONE_NON_VERIFICATA,
     ERRORE_INTERNO,
     ToolOutcome,
     build_response,
+    is_condizionale,
     serialize_outcomes,
 )
 
@@ -102,6 +105,8 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         except NeedleBadRequest as err:
             _LOGGER.error("L'add-on ha rifiutato la richiesta: %s", err)
             speech = ERRORE_INTERNO
+        except _CondizioneNonVerificata:
+            speech = CONDIZIONE_NON_VERIFICATA
         else:
             speech = build_response(user_input.text, _unique(outcomes))
 
@@ -116,7 +121,8 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         api = chat_log.llm_api
         if api is None:
             return []
-        tools = format_tools(api)
+        tools, real_names = needle_tools(api)
+        needle_names = {real: shown for shown, real in real_names.items()}
         schemas = {tool["name"]: tool["parameters"] for tool in tools}
         read_only = read_only_tools(api)
         max_passi = int(self.entry.options.get(CONF_MAX_PASSI, DEFAULT_MAX_PASSI))
@@ -125,9 +131,18 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         outcomes: list[ToolOutcome] = []
         for _ in range(max_passi):
             response = await self.entry.runtime_data.infer(tools, turni)
-            tool_inputs = self._tool_inputs(response, schemas)
+            tool_inputs = self._tool_inputs(response, schemas, real_names)
             if not tool_inputs:
                 break
+            if (
+                is_condizionale(text)
+                and not outcomes
+                and any(tool_input.tool_name not in read_only for tool_input in tool_inputs)
+            ):
+                # Needle propone l'azione senza aver letto lo stato: la condizione
+                # non verrebbe mai controllata, quindi non eseguiamo nulla.
+                _LOGGER.debug("Condizione non verificata, azioni bloccate: %s", tool_inputs)
+                raise _CondizioneNonVerificata
             step: list[ToolOutcome] = []
             async for result in chat_log.async_add_assistant_content(
                 conversation.AssistantContent(agent_id=self.entity_id, tool_calls=tool_inputs)
@@ -145,12 +160,18 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
                 # Un'azione è stata eseguita: non chiediamo altro a Needle,
                 # che tenderebbe a ripeterla dopo averne visto il risultato.
                 break
-            turni.append(serialize_outcomes(step))
+            turni.append(
+                serialize_outcomes(
+                    [replace(o, name=needle_names.get(o.name, o.name)) for o in step]
+                )
+            )
         return outcomes
 
     @staticmethod
     def _tool_inputs(
-        response: dict[str, Any], schemas: dict[str, dict[str, Any]]
+        response: dict[str, Any],
+        schemas: dict[str, dict[str, Any]],
+        real_names: dict[str, str],
     ) -> list[llm.ToolInput]:
         ungrounded = list((response.get("validation") or {}).get("ungrounded") or [])
         inputs: list[llm.ToolInput] = []
@@ -158,8 +179,8 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         for call in response.get("function_calls") or []:
             name = call.get("name")
             if name not in schemas:
-                # Needle può omettere il prefisso "homeassistant__".
-                candidates = [known for known in schemas if base_name(known) == name]
+                # Needle può usare il nome reale con prefisso (o senza, se ambiguo).
+                candidates = [known for known in schemas if base_name(known) == base_name(str(name))]
                 if len(candidates) != 1:
                     _LOGGER.debug("Needle ha proposto un tool inesistente: %s", name)
                     continue
@@ -170,7 +191,7 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
             if key in seen:
                 continue
             seen.add(key)
-            inputs.append(llm.ToolInput(tool_name=name, tool_args=cleaned))
+            inputs.append(llm.ToolInput(tool_name=real_names[name], tool_args=cleaned))
         return inputs
 
     async def _async_fallback(
@@ -190,6 +211,10 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
             speech = result.response.speech.get("plain", {}).get("speech", "")
             result.response.async_set_speech(f"{AVVISO_FALLBACK} {speech}".strip())
         return result
+
+
+class _CondizioneNonVerificata(Exception):
+    """Frase condizionale con un'azione proposta prima di qualsiasi lettura."""
 
 
 def _unique(outcomes: list[ToolOutcome]) -> list[ToolOutcome]:
