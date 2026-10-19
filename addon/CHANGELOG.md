@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.0](https://github.com/savez/ha-addon-needle/compare/v0.3.1...v1.0.0) (2026-10-19)
+
+
+### Features
+
+* tool generati per Needle dalla casa, protezioni e benchmark generico ([#17](https://github.com/savez/ha-addon-needle/issues/17)) ([319e06b](https://github.com/savez/ha-addon-needle/commit/319e06bc13c28d6280c4cc162c982eac8e05ad02))
+
 ## [0.3.1](https://github.com/savez/ha-addon-needle/compare/v0.3.0...v0.3.1) (2026-10-19)
 
 
