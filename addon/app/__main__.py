@@ -43,6 +43,10 @@ def main() -> None:
     logging.basicConfig(
         level=_log_level(), format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
+    # Le librerie restano a INFO anche in debug: i dettagli utili sono i nostri.
+    for name in ("asyncio", "aiohttp", "urllib3", "httpx", "filelock", "huggingface_hub"):
+        logging.getLogger(name).setLevel(max(logging.INFO, logging.root.level))
+    logging.getLogger(__name__).debug("Log di debug attivi")
     from .server import AppState  # noqa: PLC0415
 
     app = create_app(AppState())

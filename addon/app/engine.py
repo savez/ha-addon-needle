@@ -6,9 +6,12 @@ from collections import OrderedDict
 from collections.abc import Callable
 import hashlib
 import json
+import logging
 import threading
 import time
 from typing import Any, Protocol
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class Agent(Protocol):
@@ -66,7 +69,13 @@ class NeedleEngine:
         if key in self._agents:
             self._agents.move_to_end(key)
             return self._agents[key]
+        start = time.monotonic()
         agent = self._factory(tools)
+        _LOGGER.debug(
+            "Nuova istanza Needle per %d tool in %d ms",
+            len(tools),
+            int((time.monotonic() - start) * 1000),
+        )
         self._agents[key] = agent
         while len(self._agents) > self._max_cached:
             _, old = self._agents.popitem(last=False)

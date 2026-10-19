@@ -7,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 import json
 import logging
+import socket
 from typing import Any
 
 from aiohttp import web
@@ -46,6 +47,9 @@ async def load_model(
     state.engine = engine
     state.versione = versione
     _LOGGER.info("Modello Needle pronto (cactus-needle %s)", versione)
+    _LOGGER.info(
+        "URL da usare nell'integrazione: http://%s:8765", socket.gethostname()
+    )
 
 
 async def _health(request: web.Request) -> web.Response:
@@ -84,4 +88,14 @@ async def _infer(request: web.Request) -> web.Response:
     except Exception as err:  # noqa: BLE001 - errore del motore restituito al client
         _LOGGER.exception("Errore del motore Needle")
         return web.json_response({"errore": str(err)}, status=500)
+    _LOGGER.debug(
+        "Inferenza: %d tool, %d turni, %s ms -> %s",
+        len(tools),
+        len(turni),
+        result.get("durata_ms"),
+        [call.get("name") for call in result.get("function_calls") or []],
+    )
+    _LOGGER.debug("Tool: %s", [tool["name"] for tool in tools])
+    _LOGGER.debug("Turni: %s", turni)
+    _LOGGER.debug("Risposta: %s", json.dumps(result, ensure_ascii=False, default=str))
     return web.json_response(result)
