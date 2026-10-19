@@ -1,0 +1,26 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Needle",
+        "description": "URL of the Needle add-on.",
+        "data": { "url": "URL" }
+      }
+    },
+    "error": { "cannot_connect": "Cannot reach the Needle add-on (is it running and the model loaded?)" },
+    "abort": { "already_configured": "This add-on is already configured" }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Needle options",
+        "data": {
+          "llm_hass_api": "Home Assistant APIs available to Needle",
+          "mostra_avviso_fallback": "Show a warning when falling back to the default agent",
+          "max_passi": "Maximum reasoning steps per request",
+          "timeout_s": "Timeout per add-on call (seconds)"
+        }
+      }
+    }
+  }
+}

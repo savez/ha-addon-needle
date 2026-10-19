@@ -1,0 +1,10 @@
+.venv/
+.venv-addon/
+__pycache__/
+*.pyc
+.pytest_cache/
+addon/data/
+
+# Documentazione di progetto (spec e piani) solo in locale
+docs/
+.DS_Store
