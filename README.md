@@ -28,11 +28,35 @@ Assist ──► integrazione Needle ──(frase + tool)──► add-on Needle
 
 - **Add-on Needle Local AI**: fa solo inferenza. Riceve la frase e i tool di Assist, restituisce le
   chiamate ai tool. Non ha accesso a Home Assistant e non espone porte sull'host.
-- **Integrazione Needle Local AI**: è l'agente di Assist. Usa l'API LLM "Assist" di Home Assistant
-  (gli stessi tool che usa Gemini), lascia che sia Home Assistant a eseguirli e costruisce
-  la risposta in italiano.
+- **Integrazione Needle Local AI**: è l'agente di Assist. Legge le entità esposte ad Assist,
+  genera per Needle un piccolo insieme di tool pensati per lui (vedi sotto), traduce la
+  chiamata scelta negli intent di Home Assistant, che li esegue, e costruisce la risposta in
+  italiano.
 - Se l'add-on non risponde, la frase passa all'agente standard di Home Assistant (con un
   avviso, disattivabile).
+
+### Tool generati dalla casa
+
+I tool dell'API Assist (20-30, generici, con nomi e aree come testo libero) sono pensati per
+LLM grandi: con i pesi base Needle li usa male. L'integrazione genera invece, **da ogni
+installazione e a ogni richiesta**, pochi tool concreti con descrizioni in inglese ed esempi,
+solo per i domini presenti tra le entità esposte. Aree e nomi reali diventano i valori
+ammessi (`enum`) dei parametri: Needle sceglie fra nomi veri, non ne inventa.
+
+| Tool per Needle | Se ci sono | Si traduce in |
+|---|---|---|
+| `lights` (stanza o `all`, acceso/spento, luminosità) | luci | `HassTurnOn`/`HassTurnOff`, `HassLightSet` |
+| `air_conditioner` (stanza, acceso/spento, temperatura) | `climate` | `HassTurnOn`/`HassTurnOff`, `HassClimateSetTemperature` |
+| `blinds` (stanza, apri/chiudi, posizione) | tapparelle | `HassTurnOn`/`HassTurnOff`, `HassSetPosition` |
+| `media` (pausa, riprendi, avanti, indietro, volume) | media player | `HassMedia*`, `HassSetVolumeRelative` |
+| `device` (nome, acceso/spento) | prese, ventilatori, interruttori | `HassTurnOn`/`HassTurnOff` per nome |
+| `vacuum` (avvia, torna alla base) | aspirapolvere | `HassVacuumStart`, `HassVacuumReturnToBase` |
+| `get_<misura>` (`get_temperature`, `get_humidity`…) | sensori con quella `device_class` | `GetLiveContext` + filtro per `device_class` |
+| `get_time` | intent `GetDateTime` | `GetDateTime` |
+
+Un tool esiste solo se ci sono entità del dominio **e** l'intent di Home Assistant su cui si
+traduce. Le entità non esposte ad Assist restano irraggiungibili: le azioni passano sempre
+dagli intent. Con l'opzione `strumenti` puoi tornare ai tool di Assist (vedi sotto).
 
 ## Requisiti
 
@@ -63,7 +87,8 @@ Assist ──► integrazione Needle ──(frase + tool)──► add-on Needle
 
 | Opzione | Default | |
 |---|---|---|
-| API di Home Assistant | Assist | tool disponibili a Needle |
+| API di Home Assistant | Assist | intent usati per eseguire le azioni |
+| Strumenti mostrati a Needle (`strumenti`) | `generati` | `generati`: tool generati dalla casa (consigliato). `assist`: i tool dell'API Assist di Home Assistant, come nelle versioni precedenti: serve per confronto o ripiego |
 | Mostra avviso di ripiego | sì | se l'add-on non risponde, la risposta inizia con "⚠️ Needle non risponde…" (in voce viene letto) |
 | Passi massimi | 5 | limite di letture per richiesta |
 | Timeout | 10 s | per chiamata all'add-on |
@@ -81,19 +106,43 @@ L'add-on ha una sola opzione, `log_level` (`debug`, `info`, `warning`, `error`).
 
 ## Domande sullo stato
 
-Per le domande ("quanto è la temperatura in camera?", "la luce del bagno è accesa?") Needle
-sceglie la lettura dello stato e ne estrae le parole chiave. L'integrazione poi:
+Per le domande ("quanto è la temperatura in camera?", "com'è l'umidità in bagno?") Needle
+sceglie il tool `get_<misura>` giusto (`get_temperature`, `get_humidity`…) e la stanza, o il
+nome del sensore se non ha un'area, fra i valori reali della casa. Non c'è nessuna ricerca a
+parole: i nomi li risolve Needle con gli `enum`. L'integrazione poi:
 
-- **cerca a parole**: legge tutte le entità esposte e tiene quelle che contengono più
-  parole della richiesta in nome, alias o area. Contano anche il tipo di sensore e il dominio
-  ("temperatura", "umidità", "luce"…). Il filtro di Home Assistant vorrebbe il nome intero:
-  così invece "umidità cameretta" trova "cameretta Umidità";
+- **legge e filtra**: esegue `GetLiveContext` per quell'area o nome e tiene solo le entità
+  con la `device_class` richiesta. È un filtro deterministico su un argomento strutturato,
+  non un'interpretazione della frase;
 - **esegue le letture scartate**: quando Needle è poco sicuro scarta la chiamata. Se la
   chiamata scartata è una lettura, l'integrazione la esegue comunque, perché leggere non
   cambia nulla in casa. Le **azioni** scartate restano scartate.
 
-Le frasi con un verbo funzionano meglio ("dimmi la temperatura della cameretta") di quelle
-senza ("temperatura cameretta"). Gli alias delle entità aiutano la ricerca.
+Le misure disponibili dipendono dai sensori esposti: senza sensori di umidità non esiste
+`get_humidity`.
+
+## Protezioni
+
+Il modello base commette due errori che eseguirebbero un'azione sbagliata. Finché non c'è un
+fine-tuning, l'integrazione li ferma prima di eseguire:
+
+- **Domanda scambiata per comando.** Se la frase è una domanda (finisce con `?` o inizia con
+  una parola interrogativa: è, sono, c'è, che, quale, quanto, come, dimmi…) e Needle propone
+  un'azione, non viene eseguito nulla e la risposta è:
+
+  > Non ho capito se è una domanda o un comando: puoi riformulare?
+
+- **Dispositivo non nominato.** Per `vacuum` e `device` l'azione viene eseguita solo se la
+  frase contiene una parola del nome del dispositivo scelto o una parola del suo tipo (robot,
+  aspirapolvere, presa, interruttore…). Altrimenti la risposta è:
+
+  > Non sono sicuro del dispositivo: puoi dirmi il nome?
+
+  Per le prese e i dispositivi va nominato il dispositivo: la sola parola "presa" non basta
+  quando ce n'è più di una.
+
+Le protezioni sono regole sul testo: valgono **solo per l'italiano** e sono **temporanee**,
+da rivedere dopo il fine-tuning (vedi [ROADMAP.md](ROADMAP.md)).
 
 ## Frasi condizionali
 
@@ -129,6 +178,8 @@ l'azione solo se la condizione è vera.
 | Le risposte iniziano con "⚠️ Needle non risponde" | add-on fermo, in caricamento o troppo lento: controlla il log o aumenta il timeout |
 | "Non trovo il dispositivo o non è esposto ad Assist" | l'entità non è esposta, oppure Needle ha scelto un nome sbagliato |
 | "Non ho capito, posso aiutarti solo con i dispositivi di casa" | Needle non ha proposto nessun tool per la frase |
+| "Non ho capito se è una domanda o un comando: puoi riformulare?" | protezione: la frase sembra una domanda ma Needle ha proposto un'azione; riformula come domanda ("com'è…") o come comando |
+| "Non sono sicuro del dispositivo: puoi dirmi il nome?" | protezione: la frase non nomina il dispositivo scelto (prese, ventilatori, aspirapolvere); dì il nome ("accendi la presa del balcone") |
 | "Non riesco ancora a verificare le condizioni" | frase condizionale ("se … allora …") bloccata per sicurezza: dai il comando direttamente |
 
 Per vedere cosa ha proposto Needle: imposta `log_level: debug` nell'add-on e il logger
@@ -195,11 +246,23 @@ col modello vero (scarica ~35 MB) si lancia con `.venv-addon/bin/pytest addon/te
 
 ## Limiti noti
 
-- Progetto sperimentale: con i pesi base di Needle e i tool di Home Assistant (descrizioni in inglese) il benchmark indica un'accuratezza ancora limitata (tool corretto in 20 passi su 31, argomenti corretti in 17; le domande di stato sono il caso più debole). Misura la tua installazione col benchmark prima di affidarti a Needle.
+- Progetto sperimentale: con i pesi base di Needle e i tool generati il benchmark sulla casa
+  finta dà 20/25 tool corretti e 17/25 tool e argomenti corretti (vedi [Benchmark](#benchmark)).
+  Misura la tua installazione col benchmark prima di affidarti a Needle.
+- **Azioni sbagliate possibili.** Anche con le protezioni il modello può comandare il
+  dispositivo sbagliato: nel benchmark restano 3 azioni sbagliate su 25 frasi ("accendi la
+  luce del bagno" e "accendi la luce del bagnetto" accendono il condizionatore della camera;
+  "alza il volume" mette in pausa). Il rimedio previsto è il fine-tuning
+  ([ROADMAP.md](ROADMAP.md), voce 2). Se preferisci il comportamento precedente, imposta
+  l'opzione `strumenti` su `assist`.
+- Casi ancora deboli: "tutte le luci", "fuori" (esterno), le prese con nomi poco leggibili
+  e le domande sì/no sulle luci ("la luce del bagno è accesa?"). Il modello è sensibile alla
+  composizione dei tool: aggiungerne o toglierne sposta gli errori.
+- Le protezioni (domanda → azione, dispositivo non nominato) sono solo per l'italiano e
+  temporanee.
 - Needle non scrive testo: le risposte sono frasi predefinite, in italiano.
 - Le frasi condizionali sono bloccate finché il modello non legge lo stato prima di agire
   (vedi [Frasi condizionali](#frasi-condizionali)); non creano mai automazioni.
-- La qualità dipende da come Needle interpreta i tool di Home Assistant: misurala col benchmark.
 - Non è ancora verificato che HACS accetti questo repository (contiene sia l'add-on sia
   l'integrazione): in caso di problemi installa l'integrazione copiando la cartella.
 

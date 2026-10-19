@@ -3,7 +3,7 @@
 Needle Local AI è sperimentale. Questa pagina raccoglie i prossimi passi e il ragionamento
 dietro di essi. Le voci non hanno date.
 
-## 1. Tool pensati per Needle, generati dalla casa (in corso)
+## 1. Tool pensati per Needle, generati dalla casa (fatto in 1.0.0)
 
 **Problema.** Needle riceve oggi i tool dell'API Assist di Home Assistant: 20–30 tool generici,
 con nomi e aree come testo libero e descrizioni astratte. Sono pensati per LLM grandi. Con
@@ -27,6 +27,23 @@ irraggiungibili.
 un tool sposta gli errori. Casi ancora deboli sono "tutte le luci", "fuori", le prese con nomi
 poco leggibili e le domande sì/no sulle luci. Una prova con due passaggi (prima la categoria,
 poi il tool) è andata peggio (9/25) ed è stata scartata.
+
+**Risultato.** Implementata in 1.0.0 con l'opzione `strumenti` (`generati` o `assist`) e due
+protezioni temporanee, solo italiano (domanda → azione, dispositivo non nominato). Benchmark
+generico (casa finta, 25 frasi, pesi base, 3 esecuzioni identiche):
+
+| Metrica | Risultato |
+|---|---|
+| Tool corretti | 20/25 |
+| Tool e argomenti corretti | 17/25 (l'obiettivo era 18/25: non raggiunto) |
+| Scartate | 1/25 |
+| Azioni pericolose sulle frasi marcate | 0 dopo le protezioni (2 prima) |
+| Azioni sbagliate eseguite su tutte le frasi | 3 dopo le protezioni (5 prima) |
+
+Le 3 azioni sbagliate residue: "accendi la luce del bagno" e "accendi la luce del bagnetto"
+accendono il condizionatore della camera; "alza il volume" mette in pausa. Le protezioni non
+le fermano. Il rimedio previsto è il fine-tuning (voce 2); con `strumenti: assist` si torna al
+comportamento precedente.
 
 ## 2. Fine-tuning di Needle sui tool di Home Assistant, aggiornato a ogni versione
 

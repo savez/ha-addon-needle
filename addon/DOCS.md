@@ -73,7 +73,8 @@ Impostazioni → Dispositivi e servizi → Needle Local AI → **Configura**:
 
 | Opzione | Default | |
 |---|---|---|
-| API di Home Assistant | Assist | tool disponibili a Needle |
+| API di Home Assistant | Assist | intent usati per eseguire le azioni |
+| Strumenti mostrati a Needle (`strumenti`) | `generati` | `generati`: l'integrazione crea per Needle pochi tool dalle tue entità esposte (luci, clima, tapparelle, media, prese, aspirapolvere, sensori), con aree e nomi reali. `assist`: i tool dell'API Assist di Home Assistant, come nelle versioni precedenti (confronto o ripiego) |
 | Mostra avviso di ripiego | sì | se l'add-on non risponde, la frase passa all'agente standard e la risposta inizia con "⚠️ Needle non risponde…" (in voce viene letto) |
 | Passi massimi | 5 | limite di letture per richiesta (frasi condizionali e domande) |
 | Timeout | 10 s | per chiamata all'add-on |
@@ -86,6 +87,8 @@ Impostazioni → Dispositivi e servizi → Needle Local AI → **Configura**:
 | Le risposte iniziano con "⚠️ Needle non risponde" | add-on fermo, in caricamento o troppo lento: controlla il log o aumenta il timeout |
 | "Non trovo il dispositivo o non è esposto ad Assist" | entità non esposta, oppure Needle ha scelto un nome sbagliato |
 | "Non ho capito, posso aiutarti solo con i dispositivi di casa" | Needle non ha proposto nessun tool per la frase, o ha scartato un'azione perché poco sicuro: riformula con un verbo ("dimmi la temperatura della camera") |
+| "Non ho capito se è una domanda o un comando: puoi riformulare?" | protezione: la frase sembra una domanda ma Needle ha proposto un'azione, che non viene eseguita. Riformula ("com'è la temperatura in camera?" oppure "accendi la luce") |
+| "Non sono sicuro del dispositivo: puoi dirmi il nome?" | protezione: la frase non nomina il dispositivo scelto (prese, ventilatori, aspirapolvere): dì il nome, ad esempio "accendi la presa del balcone"; la sola parola "presa" non basta se ce n'è più di una |
 | "Non riesco ancora a verificare le condizioni" | frase condizionale ("se … allora …") bloccata per sicurezza: dai il comando direttamente |
 
 ### Log di debug
@@ -102,6 +105,8 @@ Con `info` (default) questi dettagli non vengono scritti.
 Se il log resta vuoto quando parli ad Assist, la richiesta non arriva
 all'add-on: di solito l'URL dell'integrazione è sbagliato. Per i dettagli lato
 Home Assistant usa **Attiva il debug** nella pagina dell'integrazione.
+
+Le due protezioni valgono solo per l'italiano e sono temporanee, in attesa del fine-tuning.
 
 Il progetto è sperimentale: con il modello base l'accuratezza è ancora bassa. Documentazione
 completa, benchmark e segnalazioni: <https://github.com/savez/ha-addon-needle>.
