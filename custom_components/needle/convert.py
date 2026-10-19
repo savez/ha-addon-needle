@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 import re
 from typing import Any
 
@@ -24,6 +25,24 @@ def format_tools(api: llm.APIInstance) -> list[dict[str, Any]]:
         }
         for tool in api.tools
     ]
+
+
+def needle_tools(api: llm.APIInstance) -> tuple[list[dict[str, Any]], dict[str, str]]:
+    """Tool come li vede Needle, più la mappa nome per Needle → nome reale in HA.
+
+    HA 2026.10 prefissa i nomi dei tool ("intent__HassTurnOn", "media_player__…"):
+    il prefisso confonde Needle, che finisce per scegliere i tool con il prefisso
+    più frequente. Lo togliamo quando il nome base resta univoco.
+    """
+    tools = format_tools(api)
+    counts = Counter(base_name(tool["name"]) for tool in tools)
+    real_names: dict[str, str] = {}
+    shown: list[dict[str, Any]] = []
+    for tool in tools:
+        name = base_name(tool["name"]) if counts[base_name(tool["name"])] == 1 else tool["name"]
+        real_names[name] = tool["name"]
+        shown.append({**tool, "name": name})
+    return shown, real_names
 
 
 def read_only_tools(api: llm.APIInstance) -> set[str]:

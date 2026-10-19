@@ -125,7 +125,7 @@ col modello vero (scarica ~35 MB) si lancia con `.venv-addon/bin/pytest addon/te
 
 ## Limiti noti
 
-- Progetto sperimentale: con i pesi base di Needle e i tool di Home Assistant (descrizioni in inglese) il benchmark iniziale indica un'accuratezza bassa (5 frasi su 31). Misura la tua installazione col benchmark prima di affidarti a Needle.
+- Progetto sperimentale: con i pesi base di Needle e i tool di Home Assistant (descrizioni in inglese) il benchmark indica un'accuratezza ancora limitata (tool corretto in 20 passi su 31, argomenti corretti in 17; le domande di stato e le frasi condizionali sono i casi più deboli). Misura la tua installazione col benchmark prima di affidarti a Needle.
 - Needle non scrive testo: le risposte sono frasi predefinite, in italiano.
 - Le frasi condizionali sono controlli una tantum: non creano automazioni.
 - La qualità dipende da come Needle interpreta i tool di Home Assistant: misurala col benchmark.

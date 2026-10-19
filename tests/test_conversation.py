@@ -88,6 +88,47 @@ async def test_multiple_actions(hass, setup):
     assert speech == "Ho spento Luce bagno. Ho acceso Luce cucina."
 
 
+async def test_needle_sees_names_without_prefix(hass, setup):
+    off = async_mock_service(hass, "light", "turn_off")
+    seen = []
+
+    async def infer(tools, turni):
+        seen.extend(t["name"] for t in tools)
+        return needle_reply(call("HassTurnOff", name="Luce bagno"))
+
+    with patch_infer(infer):
+        speech = await converse(hass, "spegni la luce del bagno")
+    assert "HassTurnOff" in seen
+    assert not any("__" in name for name in seen)
+    assert len(off) == 1
+    assert speech == "Ho spento Luce bagno."
+
+
+async def test_full_prefixed_name_still_accepted(hass, setup):
+    off = async_mock_service(hass, "light", "turn_off")
+
+    async def infer(tools, turni):
+        return needle_reply(call("intent__HassTurnOff", name="Luce bagno"))
+
+    with patch_infer(infer):
+        await converse(hass, "spegni la luce del bagno")
+    assert len(off) == 1
+
+
+async def test_result_turn_uses_needle_names(hass, setup):
+    seen = []
+
+    async def infer(tools, turni):
+        seen.append(list(turni))
+        if len(turni) == 1:
+            return needle_reply(call("GetLiveContext", name="Temperatura bagno"))
+        return needle_reply()
+
+    with patch_infer(infer):
+        await converse(hass, "se la temperatura del bagno è sopra 60 spegni la luce")
+    assert '"tool": "GetLiveContext"' in seen[1][1]
+
+
 async def test_action_step_ends_loop(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
     mock = AsyncMock(side_effect=lambda tools, turni: needle_reply(call(tool_name(tools, "HassTurnOff"), name="Luce bagno")))

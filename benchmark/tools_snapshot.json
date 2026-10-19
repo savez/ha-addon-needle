@@ -1,6 +1,6 @@
 [
   {
-    "name": "climate__HassClimateSetTemperature",
+    "name": "HassClimateSetTemperature",
     "description": "Sets the target temperature of a climate device or entity",
     "parameters": {
       "type": "object",
@@ -25,7 +25,7 @@
     }
   },
   {
-    "name": "fan__HassFanSetSpeed",
+    "name": "HassFanSetSpeed",
     "description": "Sets a fan's speed by percentage",
     "parameters": {
       "type": "object",
@@ -62,7 +62,7 @@
     }
   },
   {
-    "name": "homeassistant__GetLiveContext",
+    "name": "GetLiveContext",
     "description": "Provides real-time information about the CURRENT state, value, or mode of devices, sensors, entities, or areas. Use this tool for: 1. Answering questions about current conditions (e.g., 'Is the light on?'). 2. As the first step in conditional actions (e.g., 'If the weather is rainy, turn off sprinklers' requires checking the weather first). You may filter for devices by name, domain, and area, including combining those filters. Prefer filtering by domain when searching for multiple devices of the same type.",
     "parameters": {
       "type": "object",
@@ -94,7 +94,7 @@
     }
   },
   {
-    "name": "intent__HassTurnOn",
+    "name": "HassTurnOn",
     "description": "Turns on/opens/presses a device or entity. For locks, this performs a 'lock' action. Use for requests like 'turn on', 'activate', 'enable', or 'lock'.",
     "parameters": {
       "type": "object",
@@ -148,7 +148,7 @@
     }
   },
   {
-    "name": "intent__HassTurnOff",
+    "name": "HassTurnOff",
     "description": "Turns off/closes a device or entity. For locks, this performs an 'unlock' action. Use for requests like 'turn off', 'deactivate', 'disable', or 'unlock'.",
     "parameters": {
       "type": "object",
@@ -202,7 +202,7 @@
     }
   },
   {
-    "name": "intent__HassSetPosition",
+    "name": "HassSetPosition",
     "description": "Sets the position of a device or entity",
     "parameters": {
       "type": "object",
@@ -255,7 +255,7 @@
     }
   },
   {
-    "name": "intent__HassStopMoving",
+    "name": "HassStopMoving",
     "description": "Stops a moving device or entity",
     "parameters": {
       "type": "object",
@@ -300,7 +300,7 @@
     }
   },
   {
-    "name": "intent__HassCancelAllTimers",
+    "name": "HassCancelAllTimers",
     "description": "Cancels all timers",
     "parameters": {
       "type": "object",
@@ -313,7 +313,7 @@
     }
   },
   {
-    "name": "light__HassLightSet",
+    "name": "HassLightSet",
     "description": "Sets the brightness percentage or color of a light",
     "parameters": {
       "type": "object",
@@ -354,7 +354,7 @@
     }
   },
   {
-    "name": "llm__GetDateTime",
+    "name": "GetDateTime",
     "description": "Provides the current date and time.",
     "parameters": {
       "type": "object",
@@ -363,7 +363,7 @@
     }
   },
   {
-    "name": "media_player__HassMediaUnpause",
+    "name": "HassMediaUnpause",
     "description": "Resumes a media player",
     "parameters": {
       "type": "object",
@@ -403,7 +403,7 @@
     }
   },
   {
-    "name": "media_player__HassMediaPause",
+    "name": "HassMediaPause",
     "description": "Pauses a media player",
     "parameters": {
       "type": "object",
@@ -443,7 +443,7 @@
     }
   },
   {
-    "name": "media_player__HassMediaNext",
+    "name": "HassMediaNext",
     "description": "Skips a media player to the next item",
     "parameters": {
       "type": "object",
@@ -483,7 +483,7 @@
     }
   },
   {
-    "name": "media_player__HassMediaPrevious",
+    "name": "HassMediaPrevious",
     "description": "Replays the previous item for a media player",
     "parameters": {
       "type": "object",
@@ -523,7 +523,7 @@
     }
   },
   {
-    "name": "media_player__HassSetVolume",
+    "name": "HassSetVolume",
     "description": "Sets the volume percentage of a media player",
     "parameters": {
       "type": "object",
@@ -572,7 +572,7 @@
     }
   },
   {
-    "name": "media_player__HassSetVolumeRelative",
+    "name": "HassSetVolumeRelative",
     "description": "Increases or decreases the volume of a media player",
     "parameters": {
       "type": "object",
@@ -610,7 +610,7 @@
     }
   },
   {
-    "name": "media_player__HassMediaPlayerMute",
+    "name": "HassMediaPlayerMute",
     "description": "Mutes a media player",
     "parameters": {
       "type": "object",
@@ -653,7 +653,7 @@
     }
   },
   {
-    "name": "media_player__HassMediaPlayerUnmute",
+    "name": "HassMediaPlayerUnmute",
     "description": "Unmutes a media player",
     "parameters": {
       "type": "object",
