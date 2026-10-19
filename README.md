@@ -66,7 +66,7 @@ Assist ──► integrazione Needle ──(frase + tool)──► add-on Needle
 | API di Home Assistant | Assist | tool disponibili a Needle |
 | Mostra avviso di ripiego | sì | se l'add-on non risponde, la risposta inizia con "⚠️ Needle non risponde…" (in voce viene letto) |
 | Passi massimi | 5 | limite di letture per richiesta |
-| Timeout | 3 s | per chiamata all'add-on |
+| Timeout | 10 s | per chiamata all'add-on |
 
 L'add-on ha una sola opzione: `log_level` (`debug`, `info`, `warning`, `error`).
 

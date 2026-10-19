@@ -32,7 +32,7 @@ async def test_user_flow_ok(hass, aioclient_mock):
         CONF_LLM_HASS_API: ["assist"],
         CONF_MOSTRA_AVVISO: True,
         CONF_MAX_PASSI: 5,
-        CONF_TIMEOUT_S: 3,
+        CONF_TIMEOUT_S: 10,
     }
 
 
