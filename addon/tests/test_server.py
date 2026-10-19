@@ -10,8 +10,9 @@ class FakeEngine:
         self.exc = exc
         self.seen = None
 
-    def infer(self, tools, turni):
+    def infer(self, tools, turni, entita=None):
         self.seen = (tools, turni)
+        self.entita = entita
         if self.exc:
             raise self.exc
         return self.result
@@ -108,3 +109,18 @@ async def test_load_model_failure():
     await load_model(state, broken)
     assert state.engine is None
     assert "rete assente" in state.errore
+
+
+async def test_infer_passes_entities(make_client):
+    engine = FakeEngine()
+    client = await make_client(AppState(engine=engine, versione="t"))
+    entita = [{"nome": "Luce bagno", "alias": [], "aree": ["Bagno"]}]
+    resp = await client.post("/v1/infer", json={"tools": TOOLS, "turni": ["x"], "entita": entita})
+    assert resp.status == 200
+    assert engine.entita == entita
+
+
+async def test_infer_rejects_bad_entities(make_client):
+    client = await make_client(AppState(engine=FakeEngine(), versione="t"))
+    resp = await client.post("/v1/infer", json={"tools": TOOLS, "turni": ["x"], "entita": "no"})
+    assert resp.status == 400

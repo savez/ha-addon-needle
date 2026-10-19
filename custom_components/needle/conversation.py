@@ -9,6 +9,7 @@ from typing import Any, Literal, override
 
 from homeassistant.components import conversation
 from homeassistant.components.conversation import async_converse
+from homeassistant.components.homeassistant.llm import async_get_exposed_entities
 from homeassistant.const import CONF_LLM_HASS_API, MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, llm
@@ -131,12 +132,15 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         needle_names = {real: shown for shown, real in real_names.items()}
         schemas = {tool["name"]: tool["parameters"] for tool in tools}
         read_only = read_only_tools(api)
+        entita = _entita_esposte(self.hass, api.llm_context.assistant)
         max_passi = int(self.entry.options.get(CONF_MAX_PASSI, DEFAULT_MAX_PASSI))
 
         turni = [text]
         outcomes: list[ToolOutcome] = []
         for _ in range(max_passi):
-            response = await self.entry.runtime_data.infer(tools, turni)
+            response = await self.entry.runtime_data.infer(tools, turni, entita)
+            if risoluzioni := response.get("risoluzioni"):
+                _LOGGER.debug("Nomi risolti dall'add-on: %s", risoluzioni)
             tool_inputs = self._tool_inputs(response, schemas, real_names, read_only)
             tool_inputs, termini_needle = _letture_complete(tool_inputs)
             _LOGGER.debug("Passo %d, tool da eseguire: %s", len(turni), tool_inputs)
@@ -262,6 +266,20 @@ def _letture_complete(
             result.append(llm.ToolInput(tool_name=tool_input.tool_name, tool_args={}))
             letto = True
     return result, termini
+
+
+def _entita_esposte(hass: HomeAssistant, assistant: str | None) -> list[dict[str, Any]]:
+    """Nomi, alias e aree delle entità esposte: l'add-on li usa per risolvere i nomi."""
+    if not assistant:
+        return []
+    entita = []
+    for info in async_get_exposed_entities(hass, assistant, include_state=False).values():
+        nomi = [n.strip() for n in str(info.get("names") or "").split(",") if n.strip()]
+        if not nomi:
+            continue
+        aree = [a.strip() for a in str(info.get("areas") or "").split(",") if a.strip()]
+        entita.append({"nome": nomi[0], "alias": nomi[1:], "aree": aree, "dominio": info.get("domain")})
+    return entita
 
 
 class _CondizioneNonVerificata(Exception):

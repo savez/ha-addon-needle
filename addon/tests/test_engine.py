@@ -111,3 +111,20 @@ def test_inference_is_serialized():
     for thread in threads:
         thread.join()
     assert max_active == 1
+
+
+def test_risolutore_applied_with_entities():
+    class R:
+        def __init__(self):
+            self.seen = None
+
+        def risolvi(self, response, frase, entita):
+            self.seen = (frase, entita)
+            return {**response, "risolto": True}
+
+    r = R()
+    engine = NeedleEngine(Factory(), risolutore=r)
+    assert "risolto" not in engine.infer(TOOLS_A, ["ciao"])
+    result = engine.infer(TOOLS_A, ["ciao", "risultato"], [{"nome": "x"}])
+    assert result["risolto"] is True
+    assert r.seen == ("ciao", [{"nome": "x"}])

@@ -65,7 +65,7 @@ def patch_infer(side_effect):
 async def test_single_action(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         return needle_reply(call(tool_name(tools, "HassTurnOff"), name="Luce bagno"))
 
     with patch_infer(infer):
@@ -78,7 +78,7 @@ async def test_multiple_actions(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
     on = async_mock_service(hass, "light", "turn_on")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         return needle_reply(
             call(tool_name(tools, "HassTurnOff"), name="Luce bagno"),
             call(tool_name(tools, "HassTurnOn"), name="Luce cucina"),
@@ -94,7 +94,7 @@ async def test_needle_sees_names_without_prefix(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
     seen = []
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         seen.extend(t["name"] for t in tools)
         return needle_reply(call("HassTurnOff", name="Luce bagno"))
 
@@ -109,7 +109,7 @@ async def test_needle_sees_names_without_prefix(hass, setup):
 async def test_full_prefixed_name_still_accepted(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         return needle_reply(call("intent__HassTurnOff", name="Luce bagno"))
 
     with patch_infer(infer):
@@ -120,7 +120,7 @@ async def test_full_prefixed_name_still_accepted(hass, setup):
 async def test_result_turn_uses_needle_names(hass, setup):
     seen = []
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         seen.append(list(turni))
         if len(turni) == 1:
             return needle_reply(call("GetLiveContext", name="Temperatura bagno"))
@@ -133,7 +133,7 @@ async def test_result_turn_uses_needle_names(hass, setup):
 
 async def test_conditional_action_without_read_is_blocked(hass, setup):
     on = async_mock_service(hass, "light", "turn_on")
-    mock = AsyncMock(side_effect=lambda tools, turni: needle_reply(call("HassTurnOn", name="Luce cucina")))
+    mock = AsyncMock(side_effect=lambda tools, turni, entita=None: needle_reply(call("HassTurnOn", name="Luce cucina")))
     with patch("custom_components.needle.client.NeedleClient.infer", mock):
         speech = await converse(hass, "se luce bagno spenta allora accendi la luce della cucina")
     assert len(on) == 0
@@ -144,7 +144,7 @@ async def test_conditional_action_without_read_is_blocked(hass, setup):
 async def test_conditional_mixed_read_and_action_is_blocked(hass, setup):
     on = async_mock_service(hass, "light", "turn_on")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         return needle_reply(call("GetLiveContext", name="Luce bagno"), call("HassTurnOn", name="Luce cucina"))
 
     with patch_infer(infer):
@@ -155,14 +155,14 @@ async def test_conditional_mixed_read_and_action_is_blocked(hass, setup):
 
 async def test_plain_action_not_blocked(hass, setup):
     on = async_mock_service(hass, "light", "turn_on")
-    with patch_infer(lambda tools, turni: needle_reply(call("HassTurnOn", name="Luce cucina"))):
+    with patch_infer(lambda tools, turni, entita=None: needle_reply(call("HassTurnOn", name="Luce cucina"))):
         await converse(hass, "accendi la luce della cucina")
     assert len(on) == 1
 
 
 async def test_action_step_ends_loop(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
-    mock = AsyncMock(side_effect=lambda tools, turni: needle_reply(call(tool_name(tools, "HassTurnOff"), name="Luce bagno")))
+    mock = AsyncMock(side_effect=lambda tools, turni, entita=None: needle_reply(call(tool_name(tools, "HassTurnOff"), name="Luce bagno")))
     with patch("custom_components.needle.client.NeedleClient.infer", mock):
         await converse(hass, "spegni la luce del bagno")
     assert mock.await_count == 1
@@ -173,7 +173,7 @@ async def test_conditional_true(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
     seen = []
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         seen.append(list(turni))
         if len(turni) == 1:
             return needle_reply(call(tool_name(tools, "GetLiveContext"), name="Temperatura bagno"))
@@ -190,7 +190,7 @@ async def test_conditional_true(hass, setup):
 async def test_conditional_false(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         if len(turni) == 1:
             return needle_reply(call(tool_name(tools, "GetLiveContext"), name="Temperatura bagno"))
         return needle_reply()
@@ -202,7 +202,7 @@ async def test_conditional_false(hass, setup):
 
 
 async def test_question(hass, setup):
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         if len(turni) == 1:
             return needle_reply(call(tool_name(tools, "GetLiveContext"), name="Luce bagno"))
         return needle_reply()
@@ -213,7 +213,7 @@ async def test_question(hass, setup):
 
 
 async def test_reads_until_max_passi(hass, setup):
-    mock = AsyncMock(side_effect=lambda tools, turni: needle_reply(call(tool_name(tools, "GetLiveContext"), name="Luce bagno")))
+    mock = AsyncMock(side_effect=lambda tools, turni, entita=None: needle_reply(call(tool_name(tools, "GetLiveContext"), name="Luce bagno")))
     with patch("custom_components.needle.client.NeedleClient.infer", mock):
         speech = await converse(hass, "la luce del bagno è accesa?")
     assert mock.await_count == 5
@@ -223,7 +223,7 @@ async def test_reads_until_max_passi(hass, setup):
 async def test_not_exposed_entity_is_refused(hass, setup):
     on = async_mock_service(hass, "light", "turn_on")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         return needle_reply(call(tool_name(tools, "HassTurnOn"), name="Luce garage"))
 
     with patch_infer(infer):
@@ -233,19 +233,19 @@ async def test_not_exposed_entity_is_refused(hass, setup):
 
 
 async def test_non_domotica(hass, setup):
-    with patch_infer(lambda tools, turni: needle_reply()):
+    with patch_infer(lambda tools, turni, entita=None: needle_reply()):
         speech = await converse(hass, "raccontami una barzelletta")
     assert speech == NON_DOMOTICA
 
 
 async def test_unknown_tool_ignored(hass, setup):
-    with patch_infer(lambda tools, turni: needle_reply(call("ToolInventato", x=1))):
+    with patch_infer(lambda tools, turni, entita=None: needle_reply(call("ToolInventato", x=1))):
         speech = await converse(hass, "fai una magia")
     assert speech == NON_DOMOTICA
 
 
 async def test_base_name_resolved(hass, setup):
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         if len(turni) == 1:
             return needle_reply(call("GetLiveContext", name="Luce bagno"))
         return needle_reply()
@@ -258,7 +258,7 @@ async def test_base_name_resolved(hass, setup):
 async def test_string_domain_and_ungrounded_arg(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         return needle_reply(
             call(tool_name(tools, "HassTurnOff"), name="Luce bagno", domain="light", device_class="light_set"),
             ungrounded=["hass_turn_off.device_class"],
@@ -272,7 +272,7 @@ async def test_string_domain_and_ungrounded_arg(hass, setup):
 async def test_prefixed_ungrounded_path(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         name = tool_name(tools, "HassTurnOff")
         return needle_reply(
             call(name, name="Luce bagno", device_class="light_set"),
@@ -288,7 +288,7 @@ async def test_prefixed_ungrounded_path(hass, setup):
 async def test_duplicate_calls_executed_once(hass, setup):
     off = async_mock_service(hass, "light", "turn_off")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         name = tool_name(tools, "HassTurnOff")
         return needle_reply(call(name, name="Luce bagno"), call(name, name="Luce bagno"))
 
@@ -299,7 +299,7 @@ async def test_duplicate_calls_executed_once(hass, setup):
 
 
 async def test_get_date_time(hass, setup):
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         if len(turni) == 1:
             return needle_reply(call(tool_name(tools, "GetDateTime")))
         return needle_reply()
@@ -344,7 +344,7 @@ def needle_suppressed(*calls):
 
 
 async def test_read_matches_words_not_full_name(hass, setup):
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         if len(turni) == 1:
             return needle_reply(call(tool_name(tools, "GetLiveContext"), name="cameretta"))
         return needle_reply()
@@ -355,7 +355,7 @@ async def test_read_matches_words_not_full_name(hass, setup):
 
 
 async def test_suppressed_read_is_executed(hass, setup):
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         if len(turni) == 1:
             return needle_suppressed(call(tool_name(tools, "GetLiveContext"), name="Cameretta", domain=["sensor"]))
         return needle_reply()
@@ -368,10 +368,24 @@ async def test_suppressed_read_is_executed(hass, setup):
 async def test_suppressed_action_is_not_executed(hass, setup):
     on = async_mock_service(hass, "light", "turn_on")
 
-    async def infer(tools, turni):
+    async def infer(tools, turni, entita=None):
         return needle_suppressed(call(tool_name(tools, "HassTurnOn"), name="Luce cucina"))
 
     with patch_infer(infer):
         speech = await converse(hass, "accendi cucina")
     assert len(on) == 0
     assert speech == NON_DOMOTICA
+
+
+async def test_exposed_entities_sent_to_addon(hass, setup):
+    seen = []
+
+    async def infer(tools, turni, entita=None):
+        seen.append(entita)
+        return needle_reply()
+
+    with patch_infer(infer):
+        await converse(hass, "accendi la luce del bagno")
+    nomi = {e["nome"] for e in seen[0]}
+    assert {"Luce bagno", "Luce cucina", "cameretta Umidità"} <= nomi
+    assert "Luce garage" not in nomi

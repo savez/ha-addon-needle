@@ -11,5 +11,9 @@ startup: application
 boot: auto
 options:
   log_level: info
+  ricerca_entita: true
+  soglia_entita: 0.5
 schema:
   log_level: list(debug|info|warning|error)
+  ricerca_entita: bool
+  soglia_entita: float(0,1)
