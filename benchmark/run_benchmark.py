@@ -14,7 +14,7 @@ import urllib.request
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from benchmark import carica_casa, chiamata_bloccata, genera_strumenti, load_cases, run  # noqa: E402
+from benchmark import carica_casa, genera_strumenti, load_cases, passo_bloccato, run  # noqa: E402
 
 HERE = Path(__file__).parent
 
@@ -31,7 +31,11 @@ def main() -> None:
         entita, intent = carica_casa(HERE / "casa.yaml")
         tools = genera_strumenti(entita, intent)
         frasi = args.frasi or HERE / "frasi_it.yaml"
-        bloccata = chiamata_bloccata
+        nomi_vacuum = [e.nome for e in entita if e.dominio == "vacuum"]
+
+        def bloccata(frase: str, calls: list) -> bool:
+            return passo_bloccato(frase, calls, nomi_vacuum)
+
     else:
         tools = json.loads(args.snapshot.read_text(encoding="utf-8"))
         if isinstance(tools, dict):  # file di diagnostica completo di HA

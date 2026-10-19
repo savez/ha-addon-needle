@@ -48,15 +48,19 @@ def carica_casa(path: Path) -> tuple[list[Any], set[str]]:
     return entita, set(raw["intent"])
 
 
-def chiamata_bloccata(frase: str, call: dict[str, Any]) -> bool:
-    """Le protezioni dell'integrazione applicate a una chiamata non di lettura."""
-    nome = _base(call.get("name", ""))
-    if traduzione.e_lettura(nome):
-        return False
-    if protezioni.e_domanda(frase):
-        return True
-    argomento = (call.get("arguments") or {}).get("name")
-    return not protezioni.dispositivo_nominato(frase, nome, argomento)
+def passo_bloccato(
+    frase: str, calls: list[dict[str, Any]], nomi_vacuum: list[str] | tuple[str, ...] = ()
+) -> bool:
+    """Le protezioni dell'integrazione (protezioni.motivo_blocco) su tutte le chiamate di un passo.
+
+    Come nell'integrazione, se una chiamata va bloccata non si esegue nulla del passo.
+    Differenza nota: l'integrazione considera solo le chiamate che sa tradurre in intent.
+    """
+    chiamate = [
+        (_base(c.get("name", "")), c.get("arguments"), traduzione.e_lettura(_base(c.get("name", ""))))
+        for c in calls
+    ]
+    return protezioni.motivo_blocco(frase, chiamate, list(nomi_vacuum)) is not None
 
 
 @dataclass
@@ -165,7 +169,7 @@ def run(
     cases: list[Case],
     tools: list[dict[str, Any]],
     infer: Callable[[list[dict[str, Any]], list[str]], dict[str, Any]],
-    bloccata: Callable[[str, dict[str, Any]], bool] | None = None,
+    bloccata: Callable[[str, list[dict[str, Any]]], bool] | None = None,
 ) -> Report:
     report = Report()
     for case in cases:
@@ -182,7 +186,8 @@ def run(
                 if not traduzione.e_lettura(_base(c.get("name", "")))
                 and not any(score_step([a], [c]) == (True, True) for a in step.atteso)
             ]
-            eseguite = sum(not (bloccata and bloccata(case.frase, c)) for c in fuori)
+            bloccato = bool(bloccata and calls and bloccata(case.frase, calls))
+            eseguite = 0 if bloccato else len(fuori)
             report.sbagliate_prima += len(fuori)
             report.sbagliate_dopo += eseguite
             if case.pericolosa:
