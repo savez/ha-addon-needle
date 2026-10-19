@@ -45,13 +45,21 @@ class NeedleClient:
     def url(self) -> str:
         return self._url
 
-    async def infer(self, tools: list[dict[str, Any]], turni: list[str]) -> dict[str, Any]:
+    async def infer(
+        self,
+        tools: list[dict[str, Any]],
+        turni: list[str],
+        entita: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         _LOGGER.debug("POST %s/v1/infer: %d tool, turni=%s", self._url, len(tools), turni)
         start = time.monotonic()
+        body: dict[str, Any] = {"tools": tools, "turni": turni}
+        if entita:
+            body["entita"] = entita
         try:
             async with self._session.post(
                 f"{self._url}/v1/infer",
-                json={"tools": tools, "turni": turni},
+                json=body,
                 timeout=self._timeout,
             ) as resp:
                 if resp.status == 400:

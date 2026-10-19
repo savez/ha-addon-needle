@@ -83,8 +83,13 @@ async def _infer(request: web.Request) -> web.Response:
         return _bad_request("tools deve essere una lista di oggetti con 'name'")
     if not isinstance(turni, list) or not turni or not all(isinstance(t, str) for t in turni):
         return _bad_request("turni deve essere una lista non vuota di stringhe")
+    entita = body.get("entita")
+    if entita is not None and (
+        not isinstance(entita, list) or not all(isinstance(e, dict) for e in entita)
+    ):
+        return _bad_request("entita deve essere una lista di oggetti")
     try:
-        result = await asyncio.to_thread(state.engine.infer, tools, turni)
+        result = await asyncio.to_thread(state.engine.infer, tools, turni, entita)
     except Exception as err:  # noqa: BLE001 - errore del motore restituito al client
         _LOGGER.exception("Errore del motore Needle")
         return web.json_response({"errore": str(err)}, status=500)
@@ -97,5 +102,6 @@ async def _infer(request: web.Request) -> web.Response:
     )
     _LOGGER.debug("Tool: %s", [tool["name"] for tool in tools])
     _LOGGER.debug("Turni: %s", turni)
+    _LOGGER.debug("Entità ricevute: %d", len(entita or []))
     _LOGGER.debug("Risposta: %s", json.dumps(result, ensure_ascii=False, default=str))
     return web.json_response(result)

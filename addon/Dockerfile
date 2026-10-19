@@ -9,7 +9,14 @@ ENV NEEDLE_TELEMETRY=0 \
 
 WORKDIR /opt/needle
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# llama-cpp-python (EmbeddingGemma) non ha wheel per aarch64: si compila qui.
+# Sul Pi la prima build richiede diversi minuti.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential cmake libgomp1 \
+    && CMAKE_ARGS="-DGGML_NATIVE=OFF" pip install --no-cache-dir -r requirements.txt \
+    && apt-get purge -y build-essential cmake \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 COPY app ./app
 
 CMD ["python", "-m", "app"]
