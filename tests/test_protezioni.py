@@ -92,6 +92,28 @@ class TestEDomanda:
         """Test empty string."""
         assert e_domanda("") is False
 
+    def test_typographic_apostrophes(self):
+        """Test different apostrophe characters (typographic variants)."""
+        # Regular apostrophe
+        assert e_domanda("c'è la luce") is True
+        # Typographic apostrophes
+        assert e_domanda("c'è la luce") is True  # right single quotation mark
+        assert e_domanda("c'è la luce") is True  # modifier letter apostrophe (ʼ)
+        # Backtick
+        assert e_domanda("c`è la luce") is True
+        # With E' (capital E with apostrophe)
+        assert e_domanda("E' accesa") is True
+        assert e_domanda("E' accesa") is True
+        # With com'è
+        assert e_domanda("com'è la temperatura") is True
+        assert e_domanda("com'è la temperatura") is True
+
+    def test_trailing_punctuation_in_first_word(self):
+        """Test that trailing punctuation is stripped from first word."""
+        assert e_domanda("dimmi, la temperatura") is True
+        assert e_domanda("che? temperatura") is True
+        assert e_domanda("quale: nome") is True
+
 
 class TestDispositivoNominato:
     """Test dispositivo_nominato function."""
@@ -153,7 +175,11 @@ class TestDispositivoNominato:
 
     def test_accents_stripped(self):
         """Test that accents are stripped when comparing."""
-        # "cafè" -> "cafe" when accents stripped
+        # "caffè" -> "caffe" when accents stripped, not split on accent
+        assert dispositivo_nominato("accendi il caffè", "device", "Caffe") is True
+        # Also test reverse: entity has accent, phrase doesn't
+        assert dispositivo_nominato("accendi il caffe", "device", "Caffè") is True
+        # Test with hyphenated entity
         assert dispositivo_nominato("accendi il caffè", "device", "Caffè-bar") is True
 
     def test_short_words_ignored(self):
@@ -161,6 +187,11 @@ class TestDispositivoNominato:
         # Entity name "di camera" -> "di" (2 chars, ignored), "camera" (6 chars, kept)
         # Phrase has "camera" but entity name is only matched by "camera"
         assert dispositivo_nominato("accendi la camera", "device", "di camera") is True
+        # Entity name "TV di camera" -> "TV" (2 chars, ignored), "di" (2 chars, ignored), "camera" (6 chars)
+        # Phrase "accendi di" should NOT match just on "di" (short word)
+        assert dispositivo_nominato("accendi di", "device", "TV di camera") is False
+        # But should match if "camera" is in phrase
+        assert dispositivo_nominato("accendi di camera", "device", "TV di camera") is True
 
     def test_special_characters_split(self):
         """Test splitting on special characters."""

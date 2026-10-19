@@ -2,7 +2,19 @@
 
 import re
 import unicodedata
-from typing import Optional
+
+
+def _strip_accents(text: str) -> str:
+    """Strip accents from text using NFKD normalization."""
+    nfkd = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in nfkd if unicodedata.category(c) != "Mn")
+
+
+def _normalize_apostrophes(text: str) -> str:
+    """Normalize different apostrophe characters to the standard one."""
+    # Replace all apostrophe variants with the standard apostrophe
+    return text.replace("'", "'").replace("'", "'").replace("ʼ", "'").replace("`", "'")
+
 
 # Italian interrogative words
 INTERROGATIVE_IT = (
@@ -24,6 +36,9 @@ INTERROGATIVE_IT = (
     "dove",
 )
 
+# Accent-stripped interrogative words (module-level constant)
+_INTERROGATIVE_STRIPPED = tuple(_strip_accents(w) for w in INTERROGATIVE_IT)
+
 # Tool synonyms
 SINONIMI_IT = {
     "vacuum": (
@@ -40,18 +55,6 @@ SINONIMI_IT = {
         "ventilatore",
     ),
 }
-
-
-def _strip_accents(text: str) -> str:
-    """Strip accents from text using NFKD normalization."""
-    nfkd = unicodedata.normalize("NFKD", text)
-    return "".join(c for c in nfkd if unicodedata.category(c) != "Mn")
-
-
-def _normalize_apostrophes(text: str) -> str:
-    """Normalize different apostrophe characters to the standard one."""
-    # Replace both ' and ' with '
-    return text.replace("'", "'").replace("'", "'")
 
 
 def e_domanda(frase: str) -> bool:
@@ -83,21 +86,23 @@ def e_domanda(frase: str) -> bool:
     if not first_word:
         return False
 
+    # Strip trailing punctuation from first word
+    first_word = first_word.rstrip("?,.;:!")
+
     # Check if first word is in INTERROGATIVE_IT
     if first_word in INTERROGATIVE_IT:
         return True
 
     # Also check accent-stripped version against accent-stripped list
     first_word_stripped = _strip_accents(first_word)
-    interrogative_stripped = [_strip_accents(w) for w in INTERROGATIVE_IT]
 
-    return first_word_stripped in interrogative_stripped
+    return first_word_stripped in _INTERROGATIVE_STRIPPED
 
 
 def dispositivo_nominato(
     frase: str,
     tool: str,
-    nome_entita: Optional[str],
+    nome_entita: str | None,
 ) -> bool:
     """
     Check if a device is properly named in the phrase.
@@ -122,12 +127,14 @@ def dispositivo_nominato(
         return True
 
     # Extract words from phrase for comparison
+    # Strip accents first, then normalize apostrophes, then lowercase, then split
     frase_lower = frase.lower()
     frase_normalized = _normalize_apostrophes(frase_lower)
+    frase_accents_stripped = _strip_accents(frase_normalized)
     # Split on non-alphanumeric characters
     phrase_words = set(
-        _strip_accents(w)
-        for w in re.split(r"[^a-z0-9]", frase_normalized)
+        w
+        for w in re.split(r"[^a-z0-9]+", frase_accents_stripped)
         if len(w) >= 3
     )
 
@@ -142,10 +149,11 @@ def dispositivo_nominato(
     if nome_entita:
         nome_lower = nome_entita.lower()
         nome_normalized = _normalize_apostrophes(nome_lower)
+        nome_accents_stripped = _strip_accents(nome_normalized)
         # Split on non-alphanumeric characters
         entity_words = set(
-            _strip_accents(w)
-            for w in re.split(r"[^a-z0-9]", nome_normalized)
+            w
+            for w in re.split(r"[^a-z0-9]+", nome_accents_stripped)
             if len(w) >= 3
         )
 
