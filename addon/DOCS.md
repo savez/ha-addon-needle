@@ -76,7 +76,7 @@ Impostazioni → Dispositivi e servizi → Needle Local AI → **Configura**:
 | API di Home Assistant | Assist | tool disponibili a Needle |
 | Mostra avviso di ripiego | sì | se l'add-on non risponde, la frase passa all'agente standard e la risposta inizia con "⚠️ Needle non risponde…" (in voce viene letto) |
 | Passi massimi | 5 | limite di letture per richiesta (frasi condizionali e domande) |
-| Timeout | 3 s | per chiamata all'add-on |
+| Timeout | 10 s | per chiamata all'add-on |
 
 ## Problemi comuni
 
