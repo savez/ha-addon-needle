@@ -1,4 +1,4 @@
-"""Diagnostica: esporta i tool correnti, da usare come tools_snapshot.json del benchmark."""
+"""Diagnostica: esporta i tool correnti (Assist e generati), da usare nel benchmark."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from homeassistant.helpers import llm
 
 from . import NeedleConfigEntry
 from .const import DEFAULT_LLM_API, DOMAIN
+from .ciclo_generati import StrumentiGenerati
 from .convert import needle_tools
 
 
@@ -18,6 +19,7 @@ async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: NeedleConfigEntry
 ) -> dict[str, Any]:
     tools: list[dict[str, Any]] = []
+    generati: list[dict[str, Any]] = []
     if api_ids := entry.options.get(CONF_LLM_HASS_API, DEFAULT_LLM_API):
         api = await llm.async_get_api(
             hass,
@@ -31,4 +33,5 @@ async def async_get_config_entry_diagnostics(
             ),
         )
         tools, _ = needle_tools(api)
-    return {"options": dict(entry.options), "tools": tools}
+        generati = StrumentiGenerati(hass, api).tools
+    return {"options": dict(entry.options), "tools": tools, "strumenti_generati": generati}

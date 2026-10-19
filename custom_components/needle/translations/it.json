@@ -4,11 +4,17 @@
       "user": {
         "title": "Needle Local AI",
         "description": "URL dell'add-on Needle.",
-        "data": { "url": "URL" }
+        "data": {
+          "url": "URL"
+        }
       }
     },
-    "error": { "cannot_connect": "Impossibile raggiungere l'add-on Needle (è avviato e il modello è caricato?)" },
-    "abort": { "already_configured": "Questo add-on è già configurato" }
+    "error": {
+      "cannot_connect": "Impossibile raggiungere l'add-on Needle (è avviato e il modello è caricato?)"
+    },
+    "abort": {
+      "already_configured": "Questo add-on è già configurato"
+    }
   },
   "options": {
     "step": {
@@ -18,8 +24,17 @@
           "llm_hass_api": "API di Home Assistant a disposizione di Needle",
           "mostra_avviso_fallback": "Mostra un avviso quando si usa l'agente standard",
           "max_passi": "Numero massimo di passi per richiesta",
-          "timeout_s": "Timeout per chiamata all'add-on (secondi)"
+          "timeout_s": "Timeout per chiamata all'add-on (secondi)",
+          "strumenti": "Strumenti mostrati a Needle"
         }
+      }
+    }
+  },
+  "selector": {
+    "strumenti": {
+      "options": {
+        "generati": "Generati dalla casa (consigliato)",
+        "assist": "API Assist di Home Assistant"
       }
     }
   }

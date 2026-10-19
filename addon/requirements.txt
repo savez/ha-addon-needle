@@ -1,4 +1,2 @@
 cactus-needle==3.2.7
 aiohttp>=3.11,<4
-llama-cpp-python==0.3.36
-huggingface_hub>=0.30

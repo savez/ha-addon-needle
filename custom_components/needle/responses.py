@@ -7,8 +7,9 @@ import json
 import re
 from typing import Any
 
+import yaml
+
 from .convert import base_name
-from .ricerca import parse_live_context
 
 NON_DOMOTICA = "Non ho capito, posso aiutarti solo con i dispositivi di casa."
 ERRORE_INTERNO = "Errore interno di Needle."
@@ -22,6 +23,8 @@ CONDIZIONE_NON_VERIFICATA = (
     "Non riesco ancora a verificare le condizioni, quindi non ho fatto nulla. "
     "Dimmi direttamente cosa fare."
 )
+DOMANDA_O_COMANDO = "Non ho capito se è una domanda o un comando: puoi riformulare?"
+DISPOSITIVO_INCERTO = "Non sono sicuro del dispositivo: puoi dirmi il nome?"
 
 MAX_ENTITA_LETTE = 5
 
@@ -34,7 +37,15 @@ VERBI = {
     "HassMediaPause": "Ho messo in pausa",
     "HassMediaUnpause": "Ho ripreso",
     "HassSetVolume": "Ho impostato il volume di",
+    "HassSetVolumeRelative": "Ho cambiato il volume di",
+    "HassMediaNext": "Ho saltato al brano successivo su",
+    "HassMediaPrevious": "Ho rimesso il brano precedente su",
+    "HassVacuumStart": "Ho avviato",
+    "HassVacuumReturnToBase": "Ho mandato alla base",
 }
+
+# Solo le entità e i dispositivi si nominano nella risposta (non aree o domini).
+_TIPI_NOMINATI = {"entity", "device"}
 
 STATI = {
     "on": "acceso",
@@ -76,6 +87,18 @@ def serialize_outcomes(outcomes: list[ToolOutcome]) -> str:
     )
 
 
+def parse_live_context(data: dict[str, Any]) -> tuple[str, list[dict[str, Any]]]:
+    """Separa l'intestazione dall'elenco YAML delle entità di GetLiveContext."""
+    header, _, body = str(data.get("result") or "").partition("\n")
+    try:
+        parsed = yaml.safe_load(body)
+    except yaml.YAMLError:
+        return header, []
+    if not isinstance(parsed, list):
+        return header, []
+    return header, [item for item in parsed if isinstance(item, dict)]
+
+
 def is_condizionale(query: str) -> bool:
     """Frase del tipo "se … allora …": un'azione va eseguita solo dopo aver letto lo stato."""
     return bool(_CONDIZIONALE.match(query))
@@ -108,7 +131,11 @@ def _descrivi_azione(outcome: ToolOutcome) -> str:
         if data.get("error") in _ERRORI_DISPOSITIVO:
             return ERRORE_DISPOSITIVO
         return ERRORE_GENERICO
-    nomi = [t["name"] for t in (data.get("data") or {}).get("success", []) if t.get("name")]
+    nomi = [
+        t["name"]
+        for t in (data.get("data") or {}).get("success", [])
+        if t.get("name") and t.get("type") in _TIPI_NOMINATI
+    ]
     verbo = VERBI.get(base_name(outcome.name))
     if verbo and nomi:
         return f"{verbo} {', '.join(nomi)}."

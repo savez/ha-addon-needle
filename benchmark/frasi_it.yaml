@@ -1,78 +1,56 @@
-# Frasi italiane per il benchmark. Adatta i nomi ai dispositivi esposti in casa.
+# Frasi italiane sulla casa finta (casa.yaml), con atteso nel formato dei tool generati.
 # Argomenti: stringhe "contenute in" (case-insensitive), numeri per uguaglianza.
-
-# --- comandi standard (prima li capiva l'agente di HA) ---
+# pericolosa: true = domanda->azione o dominio sbagliato, contata a parte.
 - frase: accendi la luce del bagno
-  atteso: [{tool: HassTurnOn, argomenti: {name: bagno}}]
+  atteso: [{tool: lights, argomenti: {room: Bagno, state: "on"}}]
+- frase: accendi luce bagno
+  atteso: [{tool: lights, argomenti: {room: Bagno, state: "on"}}]
 - frase: spegni la luce della cucina
-  atteso: [{tool: HassTurnOff, argomenti: {name: cucina}}]
-- frase: spegni tutte le luci del salotto
-  atteso: [{tool: HassTurnOff, argomenti: {area: salotto}}]
-- frase: accendi il ventilatore dello studio
-  atteso: [{tool: HassTurnOn, argomenti: {name: ventilatore}}]
-- frase: apri la tapparella della cucina
-  atteso: [{tool: HassTurnOn, argomenti: {name: tapparella}}]
-- frase: chiudi le tapparelle del salotto
-  atteso: [{tool: HassTurnOff, argomenti: {area: salotto}}]
-- frase: metti la tapparella della camera al 30%
-  atteso: [{tool: HassSetPosition, argomenti: {position: 30}}]
-- frase: metti la luce del soggiorno al 50%
-  atteso: [{tool: HassLightSet, argomenti: {brightness: 50}}]
-- frase: imposta la luminosità della cucina all'80 per cento
-  atteso: [{tool: HassLightSet, argomenti: {brightness: 80}}]
-- frase: fai la luce del salotto rossa
-  atteso: [{tool: HassLightSet, argomenti: {color: ros}}]
-- frase: imposta il termostato a 21 gradi
-  atteso: [{tool: HassClimateSetTemperature, argomenti: {temperature: 21}}]
-- frase: metti il riscaldamento in camera a 19 gradi
-  atteso: [{tool: HassClimateSetTemperature, argomenti: {temperature: 19}}]
-- frase: metti in pausa la musica
-  atteso: [{tool: HassMediaPause}]
-- frase: riprendi la musica in salotto
-  atteso: [{tool: HassMediaUnpause}]
-- frase: imposta il volume della cucina al 40
-  atteso: [{tool: HassSetVolume, argomenti: {volume_level: 40}}]
-- frase: imposta un timer di 10 minuti
-  atteso: [{tool: HassStartTimer, argomenti: {minutes: 10}}]
-
-# --- formulazioni libere ---
-- frase: per favore potresti accendere la luce in bagno
-  atteso: [{tool: HassTurnOn, argomenti: {name: bagno}}]
-- frase: in cucina c'è troppo buio
-  atteso: [{tool: HassTurnOn}]
-- frase: non mi serve più la luce del salotto
-  atteso: [{tool: HassTurnOff}]
-
-# --- azioni multiple ---
-- frase: spegni la luce del bagno e accendi quella della cucina
-  atteso: [{tool: HassTurnOff, argomenti: {name: bagno}}, {tool: HassTurnOn, argomenti: {name: cucina}}]
-- frase: chiudi le tapparelle e spegni le luci del salotto
-  atteso: [{tool: HassTurnOff}, {tool: HassTurnOff}]
-
-# --- domande di stato ---
+  atteso: [{tool: lights, argomenti: {room: Cucina, state: "off"}}]
+- frase: accendi la luce in camera da letto
+  atteso: [{tool: lights, argomenti: {room: Camera da letto, state: "on"}}]
+- frase: accendi la luce della cameretta
+  atteso: [{tool: lights, argomenti: {room: Cameretta, state: "on"}}]
+- frase: spegni tutte le luci
+  atteso: [{tool: lights, argomenti: {room: all, state: "off"}}]
+- frase: luce soggiorno al 30%
+  atteso: [{tool: lights, argomenti: {room: Soggiorno, brightness: 30}}]
+- frase: accendi la luce del bagnetto
+  atteso: [{tool: lights, argomenti: {room: Bagno, state: "on"}}]
+- frase: che temperatura c'è in cameretta
+  atteso: [{tool: get_temperature, argomenti: {room: Cameretta}}]
+- frase: temperatura bagno
+  atteso: [{tool: get_temperature, argomenti: {room: Bagno}}]
+- frase: dimmi il valore di cameretta temperatura
+  atteso: [{tool: get_temperature, argomenti: {room: Cameretta}}]
+- frase: quanti gradi ci sono in camera
+  atteso: [{tool: get_temperature, argomenti: {room: Camera da letto}}]
+- frase: umidità del bagno
+  atteso: [{tool: get_humidity, argomenti: {room: Bagno}}]
+- frase: cameretta umidità
+  atteso: [{tool: get_humidity, argomenti: {room: Cameretta}}]
+- frase: che temperatura c'è fuori
+  atteso: [{tool: get_temperature, argomenti: {room: Temperatura esterna}}]
 - frase: la luce del bagno è accesa?
-  atteso: [{tool: GetLiveContext}]
-- frase: quanti gradi ci sono in camera?
-  atteso: [{tool: GetLiveContext}]
-- frase: è aperta la porta del garage?
-  atteso: [{tool: GetLiveContext}]
-
-# --- condizionali ---
-- frase: se la temperatura del bagno è sopra 50 spegni la luce del bagno
-  passi:
-    - atteso: [{tool: GetLiveContext}]
-      risultato: '[{"tool": "GetLiveContext", "data": {"result": "Live Context: An overview of the areas and the devices in this smart home:\n- names: Temperatura bagno\n  domain: sensor\n  state: ''55''\n  attributes:\n    unit_of_measurement: °C\n"}, "error": false}]'
-    - atteso: [{tool: HassTurnOff, argomenti: {name: bagno}}]
-- frase: se la temperatura del bagno è sopra 50 spegni la luce del bagno
-  passi:
-    - atteso: [{tool: GetLiveContext}]
-      risultato: '[{"tool": "GetLiveContext", "data": {"result": "Live Context: An overview of the areas and the devices in this smart home:\n- names: Temperatura bagno\n  domain: sensor\n  state: ''21''\n  attributes:\n    unit_of_measurement: °C\n"}, "error": false}]'
-    - atteso: []
-
-# --- fuori tema ---
-- frase: che tempo fa domani a Milano?
+  pericolosa: true
   atteso: []
-- frase: raccontami una barzelletta
-  atteso: []
-- frase: chi ha vinto il campionato nel 2010?
-  atteso: []
+- frase: accendi il condizionatore in camera
+  atteso: [{tool: air_conditioner, argomenti: {room: Camera da letto, state: "on"}}]
+- frase: metti il condizionatore del soggiorno a 24 gradi
+  atteso: [{tool: air_conditioner, argomenti: {room: Soggiorno, temperature: 24}}]
+- frase: spegni il condizionatore della cameretta
+  atteso: [{tool: air_conditioner, argomenti: {room: Cameretta, state: "off"}}]
+- frase: metti in pausa la tv
+  atteso: [{tool: media, argomenti: {action: pause}}]
+- frase: alza il volume
+  atteso: [{tool: media, argomenti: {action: louder}}]
+- frase: accendi la presa dell'albero di natale
+  pericolosa: true
+  atteso: [{tool: device, argomenti: {name: albero, state: "on"}}]
+- frase: spegni la presa del balcone
+  pericolosa: true
+  atteso: [{tool: device, argomenti: {name: balcone, state: "off"}}]
+- frase: avvia il robot aspirapolvere
+  atteso: [{tool: vacuum, argomenti: {action: start}}]
+- frase: manda il robot alla base
+  atteso: [{tool: vacuum, argomenti: {action: return_to_base}}]

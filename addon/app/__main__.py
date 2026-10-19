@@ -13,9 +13,7 @@ from typing import Any
 from aiohttp import web
 
 from .assets import ensure_assets, needle_factory
-from .embedder import GemmaEmbedder, ensure_model
 from .engine import NeedleEngine
-from .risolvi import Risolutore
 from .server import STATE, create_app, load_model
 
 DATA_DIR = Path(os.environ.get("NEEDLE_DATA_DIR", "/data"))
@@ -36,24 +34,9 @@ def _log_level() -> str:
     return str(_options().get("log_level", "info")).upper()
 
 
-def _risolutore() -> Risolutore | None:
-    options = _options()
-    if not options.get("ricerca_entita", True):
-        _LOGGER.info("Ricerca delle entità con EmbeddingGemma disattivata")
-        return None
-    try:
-        embedder = GemmaEmbedder(ensure_model(DATA_DIR))
-    except Exception:  # noqa: BLE001 - senza embedding Needle funziona comunque
-        _LOGGER.exception("EmbeddingGemma non disponibile: continuo senza")
-        return None
-    soglia = float(options.get("soglia_entita", 0.5))
-    _LOGGER.info("EmbeddingGemma pronto (soglia %.2f)", soglia)
-    return Risolutore(embedder, soglia)
-
-
 def _load() -> tuple[NeedleEngine, str]:
     weights = ensure_assets(DATA_DIR)
-    engine = NeedleEngine(needle_factory(weights), risolutore=_risolutore())
+    engine = NeedleEngine(needle_factory(weights))
     return engine, version("cactus-needle")
 
 
@@ -68,8 +51,6 @@ def main() -> None:
     )
     # Le librerie restano a INFO anche in debug: i dettagli utili sono i nostri.
     for name in ("asyncio", "aiohttp", "urllib3", "httpx", "filelock", "huggingface_hub"):
-        logging.getLogger(name).setLevel(max(logging.INFO, logging.root.level))
-    for name in ("llama_cpp",):
         logging.getLogger(name).setLevel(max(logging.INFO, logging.root.level))
     _LOGGER.debug("Log di debug attivi")
     from .server import AppState  # noqa: PLC0415

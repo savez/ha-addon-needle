@@ -9,7 +9,6 @@ from typing import Any, Literal, override
 
 from homeassistant.components import conversation
 from homeassistant.components.conversation import async_converse
-from homeassistant.components.homeassistant.llm import async_get_exposed_entities
 from homeassistant.const import CONF_LLM_HASS_API, MATCH_ALL
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, llm
@@ -17,16 +16,19 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import NeedleConfigEntry
 from .client import NeedleBadRequest, NeedleUnavailable
+from .ciclo_generati import Bloccato, Chiamata, StrumentiGenerati
 from .const import (
     CONF_MAX_PASSI,
     CONF_MOSTRA_AVVISO,
+    CONF_STRUMENTI,
     DEFAULT_LLM_API,
     DEFAULT_MAX_PASSI,
     DEFAULT_MOSTRA_AVVISO,
+    DEFAULT_STRUMENTI,
     DOMAIN,
+    STRUMENTI_ASSIST,
 )
 from .convert import base_name, clean_args, drop_ungrounded, needle_tools, read_only_tools
-from .ricerca import filtra_live_context, parole
 from .responses import (
     AVVISO_FALLBACK,
     CONDIZIONE_NON_VERIFICATA,
@@ -34,8 +36,10 @@ from .responses import (
     ToolOutcome,
     build_response,
     is_condizionale,
+    parse_live_context,
     serialize_outcomes,
 )
+from .traduzione import filtra_misura
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -111,8 +115,8 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         except NeedleBadRequest as err:
             _LOGGER.error("L'add-on ha rifiutato la richiesta: %s", err)
             speech = ERRORE_INTERNO
-        except _CondizioneNonVerificata:
-            speech = CONDIZIONE_NON_VERIFICATA
+        except Bloccato as err:
+            speech = err.risposta
         else:
             speech = build_response(user_input.text, _unique(outcomes))
 
@@ -128,95 +132,50 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         api = chat_log.llm_api
         if api is None:
             return []
-        tools, real_names = needle_tools(api)
-        needle_names = {real: shown for shown, real in real_names.items()}
-        schemas = {tool["name"]: tool["parameters"] for tool in tools}
-        read_only = read_only_tools(api)
-        entita = _entita_esposte(self.hass, api.llm_context.assistant)
+        strumenti: StrumentiGenerati | _StrumentiAssist
+        if self.entry.options.get(CONF_STRUMENTI, DEFAULT_STRUMENTI) == STRUMENTI_ASSIST:
+            strumenti = _StrumentiAssist(api)
+        else:
+            strumenti = StrumentiGenerati(self.hass, api)
         max_passi = int(self.entry.options.get(CONF_MAX_PASSI, DEFAULT_MAX_PASSI))
 
         turni = [text]
         outcomes: list[ToolOutcome] = []
         for _ in range(max_passi):
-            response = await self.entry.runtime_data.infer(tools, turni, entita)
-            if risoluzioni := response.get("risoluzioni"):
-                _LOGGER.debug("Nomi risolti dall'add-on: %s", risoluzioni)
-            tool_inputs = self._tool_inputs(response, schemas, real_names, read_only)
-            tool_inputs, termini_needle = _letture_complete(tool_inputs)
-            _LOGGER.debug("Passo %d, tool da eseguire: %s", len(turni), tool_inputs)
-            if not tool_inputs:
+            response = await self.entry.runtime_data.infer(strumenti.tools, turni)
+            chiamate = strumenti.chiamate(response, text)
+            _LOGGER.debug("Passo %d, tool da eseguire: %s", len(turni), chiamate)
+            if not chiamate:
                 break
-            if (
-                is_condizionale(text)
-                and not outcomes
-                and any(tool_input.tool_name not in read_only for tool_input in tool_inputs)
-            ):
+            if is_condizionale(text) and not outcomes and any(not c.lettura for c in chiamate):
                 # Needle propone l'azione senza aver letto lo stato: la condizione
                 # non verrebbe mai controllata, quindi non eseguiamo nulla.
-                _LOGGER.debug("Condizione non verificata, azioni bloccate: %s", tool_inputs)
-                raise _CondizioneNonVerificata
+                _LOGGER.debug("Condizione non verificata, azioni bloccate: %s", chiamate)
+                raise Bloccato(CONDIZIONE_NON_VERIFICATA)
+            per_id = {c.tool_input.id: c for c in chiamate}
             step: list[ToolOutcome] = []
+            nomi_needle: list[str] = []
             async for result in chat_log.async_add_assistant_content(
-                conversation.AssistantContent(agent_id=self.entity_id, tool_calls=tool_inputs)
-            ):
-                data = dict(result.result.data)
-                if base_name(result.tool_name) == "GetLiveContext" and not result.result.error:
-                    data = filtra_live_context(data, termini_needle, parole(text))
-                step.append(
-                    ToolOutcome(
-                        name=result.tool_name,
-                        data=data,
-                        error=result.result.error,
-                        read_only=result.tool_name in read_only,
-                    )
+                conversation.AssistantContent(
+                    agent_id=self.entity_id, tool_calls=[c.tool_input for c in chiamate]
                 )
+            ):
+                chiamata = per_id.get(result.tool_call_id)
+                step.append(_esito(result, chiamata))
+                nomi_needle.append(chiamata.nome_needle if chiamata else result.tool_name)
             _LOGGER.debug("Risultati: %s", step)
             outcomes.extend(step)
             if any(not outcome.read_only for outcome in step):
                 # Un'azione è stata eseguita: non chiediamo altro a Needle,
                 # che tenderebbe a ripeterla dopo averne visto il risultato.
                 break
+            # I risultati tornano a Needle con il nome del tool che ha scelto.
             turni.append(
                 serialize_outcomes(
-                    [replace(o, name=needle_names.get(o.name, o.name)) for o in step]
+                    [replace(o, name=nome) for o, nome in zip(step, nomi_needle, strict=True)]
                 )
             )
         return outcomes
-
-    @staticmethod
-    def _tool_inputs(
-        response: dict[str, Any],
-        schemas: dict[str, dict[str, Any]],
-        real_names: dict[str, str],
-        read_only: set[str],
-    ) -> list[llm.ToolInput]:
-        ungrounded = list((response.get("validation") or {}).get("ungrounded") or [])
-        calls = list(response.get("function_calls") or [])
-        # Needle scarta le chiamate poco sicure. Una lettura non cambia nulla in
-        # casa, quindi la eseguiamo comunque; le azioni scartate restano scartate.
-        letture = {shown for shown, real in real_names.items() if real in read_only}
-        letture_scartate = [
-            call
-            for call in response.get("suppressed_calls") or []
-            if _resolve(str(call.get("name")), schemas) in letture
-        ]
-        if letture_scartate:
-            _LOGGER.debug("Letture scartate da Needle eseguite comunque: %s", letture_scartate)
-        inputs: list[llm.ToolInput] = []
-        seen: set[tuple[str, str]] = set()
-        for call in calls + letture_scartate:
-            name = _resolve(str(call.get("name")), schemas)
-            if name is None:
-                _LOGGER.debug("Needle ha proposto un tool inesistente: %s", call.get("name"))
-                continue
-            args = drop_ungrounded(name, dict(call.get("arguments") or {}), ungrounded)
-            cleaned = clean_args(args, schemas[name])
-            key = (name, json.dumps(cleaned, sort_keys=True, default=str))
-            if key in seen:
-                continue
-            seen.add(key)
-            inputs.append(llm.ToolInput(tool_name=real_names[name], tool_args=cleaned))
-        return inputs
 
     async def _async_fallback(
         self, user_input: conversation.ConversationInput
@@ -237,53 +196,78 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         return result
 
 
+class _StrumentiAssist:
+    """Tool dell'API Assist mostrati a Needle senza prefisso (opzione `assist`)."""
+
+    def __init__(self, api: llm.APIInstance) -> None:
+        self.tools, self._real_names = needle_tools(api)
+        self._schemas = {tool["name"]: tool["parameters"] for tool in self.tools}
+        self._read_only = read_only_tools(api)
+
+    def chiamate(self, response: dict[str, Any], text: str) -> list[Chiamata]:
+        ungrounded = list((response.get("validation") or {}).get("ungrounded") or [])
+        calls = list(response.get("function_calls") or [])
+        # Needle scarta le chiamate poco sicure. Una lettura non cambia nulla in
+        # casa, quindi la eseguiamo comunque; le azioni scartate restano scartate.
+        letture = {
+            shown for shown, real in self._real_names.items() if real in self._read_only
+        }
+        letture_scartate = [
+            call
+            for call in response.get("suppressed_calls") or []
+            if _resolve(str(call.get("name")), self._schemas) in letture
+        ]
+        if letture_scartate:
+            _LOGGER.debug("Letture scartate da Needle eseguite comunque: %s", letture_scartate)
+        chiamate: list[Chiamata] = []
+        seen: set[tuple[str, str]] = set()
+        for call in calls + letture_scartate:
+            name = _resolve(str(call.get("name")), self._schemas)
+            if name is None:
+                _LOGGER.debug("Needle ha proposto un tool inesistente: %s", call.get("name"))
+                continue
+            args = drop_ungrounded(name, dict(call.get("arguments") or {}), ungrounded)
+            cleaned = clean_args(args, self._schemas[name])
+            key = (name, json.dumps(cleaned, sort_keys=True, default=str))
+            if key in seen:
+                continue
+            seen.add(key)
+            real = self._real_names[name]
+            chiamate.append(
+                Chiamata(
+                    tool_input=llm.ToolInput(tool_name=real, tool_args=cleaned),
+                    nome_needle=name,
+                    lettura=real in self._read_only,
+                )
+            )
+        return chiamate
+
+
+def _esito(
+    result: conversation.ToolResultContent, chiamata: Chiamata | None
+) -> ToolOutcome:
+    """Risultato di un tool; per le misure tiene solo le entità della device_class."""
+    data = dict(result.result.data)
+    error = result.result.error
+    if chiamata is not None and chiamata.misura and not error:
+        data = filtra_misura(data, chiamata.misura)
+        if not parse_live_context(data)[1]:
+            # Nessun sensore di quel tipo: non è un "Fatto.".
+            error = True
+    return ToolOutcome(
+        name=result.tool_name,
+        data=data,
+        error=error,
+        read_only=chiamata.lettura if chiamata is not None else False,
+    )
+
+
 def _resolve(name: str, schemas: dict[str, dict[str, Any]]) -> str | None:
     """Nome mostrato a Needle; Needle può usare il nome reale con prefisso."""
     if name in schemas:
         return name
     candidates = [known for known in schemas if base_name(known) == base_name(name)]
     return candidates[0] if len(candidates) == 1 else None
-
-
-def _letture_complete(
-    tool_inputs: list[llm.ToolInput],
-) -> tuple[list[llm.ToolInput], set[str]]:
-    """Toglie i filtri da GetLiveContext e ne restituisce le parole.
-
-    Il filtro di Home Assistant vuole il nome intero; la ricerca a parole
-    sul risultato completo la fa poi filtra_live_context.
-    """
-    termini: set[str] = set()
-    result: list[llm.ToolInput] = []
-    letto = False
-    for tool_input in tool_inputs:
-        if base_name(tool_input.tool_name) != "GetLiveContext":
-            result.append(tool_input)
-            continue
-        args = tool_input.tool_args
-        termini |= parole(" ".join(str(args.get(key) or "") for key in ("name", "area")))
-        if not letto:
-            result.append(llm.ToolInput(tool_name=tool_input.tool_name, tool_args={}))
-            letto = True
-    return result, termini
-
-
-def _entita_esposte(hass: HomeAssistant, assistant: str | None) -> list[dict[str, Any]]:
-    """Nomi, alias e aree delle entità esposte: l'add-on li usa per risolvere i nomi."""
-    if not assistant:
-        return []
-    entita = []
-    for info in async_get_exposed_entities(hass, assistant, include_state=False).values():
-        nomi = [n.strip() for n in str(info.get("names") or "").split(",") if n.strip()]
-        if not nomi:
-            continue
-        aree = [a.strip() for a in str(info.get("areas") or "").split(",") if a.strip()]
-        entita.append({"nome": nomi[0], "alias": nomi[1:], "aree": aree, "dominio": info.get("domain")})
-    return entita
-
-
-class _CondizioneNonVerificata(Exception):
-    """Frase condizionale con un'azione proposta prima di qualsiasi lettura."""
 
 
 def _unique(outcomes: list[ToolOutcome]) -> list[ToolOutcome]:

@@ -9,10 +9,7 @@ import json
 import logging
 import threading
 import time
-from typing import TYPE_CHECKING, Any, Protocol
-
-if TYPE_CHECKING:
-    from .risolvi import Risolutore
+from typing import Any, Protocol
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,24 +38,13 @@ class NeedleEngine:
     quindi le inferenze sono serializzate da un lock.
     """
 
-    def __init__(
-        self,
-        factory: AgentFactory,
-        max_cached: int = 2,
-        risolutore: Risolutore | None = None,
-    ) -> None:
+    def __init__(self, factory: AgentFactory, max_cached: int = 2) -> None:
         self._factory = factory
-        self._risolutore = risolutore
         self._max_cached = max_cached
         self._agents: OrderedDict[str, Agent] = OrderedDict()
         self._lock = threading.Lock()
 
-    def infer(
-        self,
-        tools: list[dict[str, Any]],
-        turni: list[str],
-        entita: list[dict[str, Any]] | None = None,
-    ) -> dict[str, Any]:
+    def infer(self, tools: list[dict[str, Any]], turni: list[str]) -> dict[str, Any]:
         if not turni:
             raise ValueError("turni non può essere vuoto")
         start = time.monotonic()
@@ -68,8 +54,6 @@ class NeedleEngine:
             response: dict[str, Any] = {}
             for turno in turni:
                 response = agent.complete(turno)
-            if self._risolutore is not None and entita:
-                response = self._risolutore.risolvi(response, turni[0], entita)
         result = dict(response)
         if len(turni) > 1:
             # Il controllo sugli argomenti inventati confronta con il testo del
