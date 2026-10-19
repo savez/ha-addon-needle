@@ -1,23 +1,27 @@
-"""Protection functions for Needle conversation handling."""
+"""Protezioni temporanee, solo per l'italiano, sulle chiamate proposte da Needle.
 
+Modulo puro: solo libreria standard, nessuna dipendenza da Home Assistant né
+import relativi (il benchmark lo carica per percorso).
+"""
+
+from collections.abc import Collection, Iterable
 import re
+from typing import Any
 import unicodedata
 
 
 def _strip_accents(text: str) -> str:
-    """Strip accents from text using NFKD normalization."""
+    """Toglie gli accenti (normalizzazione NFKD)."""
     nfkd = unicodedata.normalize("NFKD", text)
     return "".join(c for c in nfkd if unicodedata.category(c) != "Mn")
 
 
 def _normalize_apostrophes(text: str) -> str:
-    """Normalize different apostrophe characters to the standard one."""
-    # Replace all apostrophe variants with the standard apostrophe
-    # U+2019 (right single quotation mark), U+02BC (modifier letter apostrophe), backtick
-    return text.replace("'", "'").replace("’", "'").replace("ʼ", "'").replace("`", "'")
+    """Riporta gli apostrofi tipografici (U+2019, U+02BC, accento grave) a quello semplice."""
+    return text.replace("’", "'").replace("ʼ", "'").replace("`", "'")
 
 
-# Italian interrogative words
+# Parole interrogative italiane
 INTERROGATIVE_IT = (
     "è",
     "e'",
@@ -37,10 +41,10 @@ INTERROGATIVE_IT = (
     "dove",
 )
 
-# Accent-stripped interrogative words (module-level constant)
+# Parole interrogative senza accenti
 _INTERROGATIVE_STRIPPED = tuple(_strip_accents(w) for w in INTERROGATIVE_IT)
 
-# Tool synonyms
+# Sinonimi dei tool che comandano un dispositivo preciso
 SINONIMI_IT = {
     "vacuum": (
         "robot",
@@ -57,47 +61,94 @@ SINONIMI_IT = {
     ),
 }
 
+# Preposizioni articolate e altre parole vuote: non nominano nessun dispositivo.
+# Le forme elise ("dell'albero") diventano "dell", "nell", ecc.
+STOPWORDS_IT = frozenset(
+    {
+        "del", "dello", "della", "dei", "degli", "delle", "dell",
+        "nel", "nello", "nella", "nei", "negli", "nelle", "nell",
+        "sul", "sullo", "sulla", "sui", "sugli", "sulle", "sull",
+        "al", "allo", "alla", "ai", "agli", "alle", "all",
+        "dal", "dallo", "dalla", "dai", "dagli", "dalle", "dall",
+        "con", "per", "tra", "fra",
+        "una", "uno", "gli",
+    }
+)
+
+# Parole chiave per tipo di dispositivo (solo i tool che si confondono tra loro).
+PAROLE_DOMINIO_IT: dict[str, frozenset[str]] = {
+    "lights": frozenset({"luce", "luci", "lampada", "lampadina", "lampade", "faretto"}),
+    "air_conditioner": frozenset(
+        {
+            "condizionatore",
+            "clima",
+            "climatizzatore",
+            "riscaldamento",
+            "termostato",
+            "gradi",
+            "aria",
+            "caldo",
+            "freddo",
+        }
+    ),
+    "blinds": frozenset(
+        {"tapparella", "tapparelle", "tenda", "tende", "persiana", "persiane"}
+    ),
+    "media": frozenset(
+        {
+            "musica",
+            "canzone",
+            "brano",
+            "volume",
+            "tv",
+            "televisione",
+            "radio",
+            "pausa",
+            "riprendi",
+            "avanti",
+            "indietro",
+            "alza",
+            "abbassa",
+        }
+    ),
+}
+
+DOMANDA = "domanda"
+DISPOSITIVO = "dispositivo"
+
+
+def _parole(testo: str) -> list[str]:
+    """Parole minuscole, senza accenti, divise sui caratteri non alfanumerici."""
+    normalizzato = _strip_accents(_normalize_apostrophes(testo.lower()))
+    return [w for w in re.split(r"[^a-z0-9]+", normalizzato) if w]
+
+
+def _parole_significative(testo: str) -> set[str]:
+    """Parole di almeno 3 lettere che non sono preposizioni articolate o parole vuote."""
+    return {w for w in _parole(testo) if len(w) >= 3 and w not in STOPWORDS_IT}
+
 
 def e_domanda(frase: str) -> bool:
-    """
-    Determine if a phrase is a question.
+    """La frase è una domanda?
 
-    Returns True if:
-    - The phrase ends with '?' (ignoring trailing spaces), OR
-    - The first word (lowercased, apostrophes normalized) is in INTERROGATIVE_IT
-
-    Args:
-        frase: The phrase to check
-
-    Returns:
-        True if the phrase is a question, False otherwise
+    Vero se finisce con '?' (spazi finali ignorati) oppure se la prima parola
+    (minuscola, apostrofi normalizzati) è in INTERROGATIVE_IT.
     """
     if not frase:
         return False
 
-    # Check if ends with question mark (ignoring trailing spaces)
-    stripped = frase.rstrip()
-    if stripped.endswith("?"):
+    if frase.rstrip().endswith("?"):
         return True
 
-    # Get first word (whitespace-separated token)
     frase_normalized = _normalize_apostrophes(frase.lower())
     first_word = frase_normalized.split()[0] if frase_normalized.split() else ""
-
     if not first_word:
         return False
 
-    # Strip trailing punctuation from first word
     first_word = first_word.rstrip("?,.;:!")
-
-    # Check if first word is in INTERROGATIVE_IT
     if first_word in INTERROGATIVE_IT:
         return True
-
-    # Also check accent-stripped version against accent-stripped list
-    first_word_stripped = _strip_accents(first_word)
-
-    return first_word_stripped in _INTERROGATIVE_STRIPPED
+    return _strip_accents(first_word) in _INTERROGATIVE_STRIPPED
 
 
 def dispositivo_nominato(
@@ -105,79 +156,79 @@ def dispositivo_nominato(
     tool: str,
     nome_entita: str | None,
 ) -> bool:
+    """Il dispositivo scelto è nominato nella frase?
+
+    Solo per i tool "vacuum" e "device" (per gli altri è sempre vero). Si confrontano
+    le parole di almeno 3 lettere, senza accenti e senza preposizioni articolate.
+
+    - device: serve una parola del nome dell'entità che non sia un sinonimo
+      ("presa" da sola non basta). Se il nome è fatto solo di sinonimi, vale la
+      regola generale.
+    - regola generale: basta una parola del nome dell'entità o un sinonimo del tool.
     """
-    Check if a device is properly named in the phrase.
-
-    For "vacuum" and "device" tools:
-    - Returns True if any word (≥3 letters, no accents, lowercase) from nome_entita
-      appears in the phrase, OR if any synonym of the tool appears in the phrase
-
-    For other tools:
-    - Always returns True
-
-    Args:
-        frase: The phrase to check
-        tool: The tool name ("vacuum", "device", etc.)
-        nome_entita: The entity name to look for
-
-    Returns:
-        True if device is properly named or tool is not a special tool
-    """
-    # Only special handling for vacuum and device tools
     if tool not in {"vacuum", "device"}:
         return True
 
-    # Extract words from phrase for comparison
-    # Strip accents first, then normalize apostrophes, then lowercase, then split
-    frase_lower = frase.lower()
-    frase_normalized = _normalize_apostrophes(frase_lower)
-    frase_accents_stripped = _strip_accents(frase_normalized)
-    # Split on non-alphanumeric characters
-    phrase_words = set(
-        w
-        for w in re.split(r"[^a-z0-9]+", frase_accents_stripped)
-        if len(w) >= 3
-    )
+    phrase_words = _parole_significative(frase)
+    entity_words = _parole_significative(nome_entita) if nome_entita else set()
 
-    if tool == "device" and nome_entita:
-        # A synonym alone ("presa") is not enough: a word of the entity name that is
-        # not a synonym must be nominated. Names made only of synonyms fall through
-        # to the generic rule below.
+    if tool == "device" and entity_words:
         sinonimi = {
             _strip_accents(syn.lower()) for syns in SINONIMI_IT.values() for syn in syns
         }
-        nome_words = {
-            w
-            for w in re.split(
-                r"[^a-z0-9]+", _strip_accents(_normalize_apostrophes(nome_entita.lower()))
-            )
-            if len(w) >= 3
-        }
-        distintive = nome_words - sinonimi
+        distintive = entity_words - sinonimi
         if distintive:
             return bool(distintive & phrase_words)
 
-    # Check tool synonyms
-    if tool in SINONIMI_IT:
-        for synonym in SINONIMI_IT[tool]:
-            synonym_normalized = _strip_accents(synonym.lower())
-            if synonym_normalized in phrase_words:
-                return True
+    if any(_strip_accents(s.lower()) in phrase_words for s in SINONIMI_IT.get(tool, ())):
+        return True
+    return bool(entity_words & phrase_words)
 
-    # Check entity name words
-    if nome_entita:
-        nome_lower = nome_entita.lower()
-        nome_normalized = _normalize_apostrophes(nome_lower)
-        nome_accents_stripped = _strip_accents(nome_normalized)
-        # Split on non-alphanumeric characters
-        entity_words = set(
-            w
-            for w in re.split(r"[^a-z0-9]+", nome_accents_stripped)
-            if len(w) >= 3
-        )
 
-        # Check if any entity word appears in phrase
-        if entity_words & phrase_words:
-            return True
+def dominio_coerente(frase: str, tool: str) -> bool:
+    """Il tool scelto corrisponde al tipo di dispositivo nominato nella frase?
 
-    return False
+    Falso se la frase contiene una parola chiave di un ALTRO tool tra luci,
+    condizionatore, tapparelle e media, e nessuna parola chiave del tool scelto.
+    Per gli altri tool è sempre vero.
+    """
+    proprie = PAROLE_DOMINIO_IT.get(tool)
+    if proprie is None:
+        return True
+    parole = set(_parole(frase))
+    if parole & proprie:
+        return True
+    altre = set().union(*(p for t, p in PAROLE_DOMINIO_IT.items() if t != tool))
+    return not (parole & altre)
+
+
+def motivo_blocco(
+    frase: str,
+    chiamate: Iterable[tuple[str, Any, bool]],
+    nomi_vacuum: Collection[str],
+) -> str | None:
+    """Perché le chiamate proposte per questa frase non vanno eseguite (o None).
+
+    `chiamate`: (nome del tool di Needle, argomenti, è una lettura).
+    `nomi_vacuum`: nomi degli aspirapolvere della casa; se è uno solo vale come nome
+    quando Needle non ne indica uno.
+
+    - DOMANDA: la frase è una domanda e c'è almeno un'azione (si blocca tutto,
+      letture comprese: nessuna esecuzione parziale).
+    - DISPOSITIVO: per almeno una chiamata il dispositivo non è nominato o il tool
+      non corrisponde al tipo di dispositivo della frase (si blocca tutto).
+    """
+    chiamate = list(chiamate)
+    if e_domanda(frase) and any(not lettura for _, _, lettura in chiamate):
+        return DOMANDA
+    for nome, argomenti, _ in chiamate:
+        nome_entita = None
+        if isinstance(argomenti, dict) and isinstance(argomenti.get("name"), str):
+            nome_entita = argomenti["name"]
+        elif nome == "vacuum" and len(nomi_vacuum) == 1:
+            nome_entita = next(iter(nomi_vacuum))
+        if not dispositivo_nominato(frase, nome, nome_entita):
+            return DISPOSITIVO
+        if not dominio_coerente(frase, nome):
+            return DISPOSITIVO
+    return None

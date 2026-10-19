@@ -6,6 +6,8 @@ from custom_components.needle.protezioni import (
     SINONIMI_IT,
     e_domanda,
     dispositivo_nominato,
+    dominio_coerente,
+    motivo_blocco,
 )
 
 
@@ -212,3 +214,92 @@ class TestDispositivoNominato:
         # Should split into: presa, balcone, sala, presa
         assert dispositivo_nominato("accendi la presa", "device", "presa-balcone-sala") is False
         assert dispositivo_nominato("accendi il balcone", "device", "presa-balcone-sala") is True
+
+
+class TestPreposizioniArticolate:
+    """Le preposizioni articolate non bastano a nominare un dispositivo."""
+
+    def test_device_del_non_basta(self):
+        assert dispositivo_nominato("accendi la luce del bagno", "device", "Presa del balcone") is False
+
+    def test_device_della_non_basta(self):
+        assert dispositivo_nominato("spegni la luce della cucina", "device", "Presa della sala") is False
+
+    def test_vacuum_del_non_basta(self):
+        assert dispositivo_nominato("accendi la luce del bagno", "vacuum", "Robot del soggiorno") is False
+
+    def test_elisione_dell_non_basta(self):
+        assert dispositivo_nominato("accendi la luce dell'ingresso", "device", "Presa dell'albero") is False
+
+    def test_nome_con_preposizione_resta_valido(self):
+        assert dispositivo_nominato("spegni la presa del balcone", "device", "Presa del balcone") is True
+        assert dispositivo_nominato("avvia il robot del soggiorno", "vacuum", "Robot del soggiorno") is True
+
+
+class TestDominioCoerente:
+    """Parole chiave del dominio: un tool non va usato per un altro tipo di dispositivo."""
+
+    @pytest.mark.parametrize(
+        ("frase", "tool", "atteso"),
+        [
+            ("accendi la luce del bagno", "air_conditioner", False),
+            ("accendi la luce del bagno", "lights", True),
+            ("accendi il condizionatore in camera", "air_conditioner", True),
+            ("accendi il condizionatore in camera", "lights", False),
+            ("alza il volume", "media", True),
+            ("metti in pausa la tv", "media", True),
+            ("spegni tutto", "lights", True),
+            ("accendi la tv", "lights", False),
+            ("apri la tapparella", "media", False),
+            ("accendi l'aria in camera", "lights", False),
+            ("accendi la luce del bagno", "vacuum", True),
+            ("abbassa la tapparella", "blinds", True),
+            ("accendi la lampada", "lights", True),
+        ],
+    )
+    def test_dominio(self, frase, tool, atteso):
+        assert dominio_coerente(frase, tool) is atteso
+
+
+class TestMotivoBlocco:
+    """Decisione unica per integrazione e benchmark."""
+
+    def test_nessun_blocco(self):
+        chiamate = [("lights", {"room": "Bagno", "state": "on"}, False)]
+        assert motivo_blocco("accendi la luce del bagno", chiamate, []) is None
+
+    def test_domanda_con_azione_blocca_tutto(self):
+        chiamate = [
+            ("get_temperature", {"room": "Bagno"}, True),
+            ("lights", {"room": "Bagno", "state": "on"}, False),
+        ]
+        assert motivo_blocco("quanti gradi ci sono in bagno?", chiamate, []) == "domanda"
+
+    def test_domanda_con_sole_letture_passa(self):
+        chiamate = [("get_temperature", {"room": "Bagno"}, True)]
+        assert motivo_blocco("quanti gradi ci sono in bagno?", chiamate, []) is None
+
+    def test_dispositivo_non_nominato(self):
+        chiamate = [("device", {"name": "Presa del balcone", "state": "on"}, False)]
+        assert motivo_blocco("accendi la presa dell'albero", chiamate, []) == "dispositivo"
+
+    def test_aspirapolvere_unico_nome_di_ripiego(self):
+        chiamate = [("vacuum", {"action": "start"}, False)]
+        assert motivo_blocco("accendi la presa", chiamate, ["Robot"]) == "dispositivo"
+        assert motivo_blocco("fai partire il robot", chiamate, ["Robot"]) is None
+
+    def test_aspirapolvere_senza_nome_con_piu_aspirapolveri(self):
+        chiamate = [("vacuum", {"action": "start"}, False)]
+        assert motivo_blocco("avvia la pulizia", chiamate, ["Robot", "Mocio"]) is None
+        assert motivo_blocco("accendi la luce", chiamate, ["Robot", "Mocio"]) == "dispositivo"
+
+    def test_dominio_incoerente(self):
+        chiamate = [("air_conditioner", {"room": "Camera", "state": "on"}, False)]
+        assert motivo_blocco("accendi la luce del bagno", chiamate, []) == "dispositivo"
+
+    def test_una_chiamata_sbagliata_blocca_il_passo(self):
+        chiamate = [
+            ("lights", {"room": "Bagno", "state": "on"}, False),
+            ("air_conditioner", {"room": "Camera", "state": "on"}, False),
+        ]
+        assert motivo_blocco("accendi la luce del bagno", chiamate, []) == "dispositivo"

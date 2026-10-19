@@ -16,7 +16,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
 
 from .convert import base_name
-from .protezioni import dispositivo_nominato, e_domanda
+from .protezioni import DOMANDA, motivo_blocco
 from .responses import DISPOSITIVO_INCERTO, DOMANDA_O_COMANDO
 from .strumenti import Entita, entita_da_esposte, genera_strumenti
 from .traduzione import LETTURE, e_lettura, traduci
@@ -82,14 +82,18 @@ class StrumentiGenerati:
                 continue
             tradotte.append((str(call["name"]), call, intent))
 
-        if e_domanda(text) and any(not e_lettura(nome) for nome, _, _ in tradotte):
+        motivo = motivo_blocco(
+            text,
+            [(nome, call.get("arguments"), e_lettura(nome)) for nome, call, _ in tradotte],
+            [e.nome for e in self._entita if e.dominio == "vacuum"],
+        )
+        if motivo == DOMANDA:
             # Nessuna esecuzione parziale: si bloccano anche le letture.
             _LOGGER.debug("Domanda con un'azione proposta, nulla eseguito: %s", tradotte)
             raise Bloccato(DOMANDA_O_COMANDO)
-        for nome, call, _ in tradotte:
-            if not dispositivo_nominato(text, nome, self._nome_entita(nome, call)):
-                _LOGGER.debug("Dispositivo non nominato nella frase: %s", call)
-                raise Bloccato(DISPOSITIVO_INCERTO)
+        if motivo is not None:
+            _LOGGER.debug("Dispositivo incerto per la frase, nulla eseguito: %s", tradotte)
+            raise Bloccato(DISPOSITIVO_INCERTO)
 
         risultato: list[Chiamata] = []
         visti: set[tuple[str, str, str]] = set()
@@ -110,14 +114,3 @@ class StrumentiGenerati:
                     )
                 )
         return risultato
-
-    def _nome_entita(self, nome: str, call: dict[str, Any]) -> str | None:
-        """Nome dell'entità scelta: argomento `name`, o l'unico aspirapolvere."""
-        argomenti = call.get("arguments")
-        if isinstance(argomenti, dict) and isinstance(argomenti.get("name"), str):
-            return argomenti["name"]
-        if nome == "vacuum":
-            aspirapolveri = [e for e in self._entita if e.dominio == "vacuum"]
-            if len(aspirapolveri) == 1:
-                return aspirapolveri[0].nome
-        return None

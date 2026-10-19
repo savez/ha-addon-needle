@@ -531,6 +531,18 @@ async def test_vacuum_named_executed(hass, setup):
     assert [c.data["entity_id"] for c in start] == ["vacuum.robot"]
 
 
+async def test_wrong_domain_blocked(hass, setup):
+    on = async_mock_service(hass, "light", "turn_on")
+
+    async def infer(tools, turni):
+        return needle_reply(call("lights", room="Bagno", state="on"))
+
+    with patch_infer(infer):
+        speech = await converse(hass, "accendi il condizionatore in camera")
+    assert len(on) == 0
+    assert speech == DISPOSITIVO_INCERTO
+
+
 async def test_generated_suppressed_read_is_executed(hass, setup):
     async def infer(tools, turni):
         if len(turni) == 1:
