@@ -27,9 +27,11 @@ from .const import (
 from .convert import base_name, clean_args, drop_ungrounded, needle_tools, read_only_tools
 from .responses import (
     AVVISO_FALLBACK,
+    CONDIZIONE_NON_VERIFICATA,
     ERRORE_INTERNO,
     ToolOutcome,
     build_response,
+    is_condizionale,
     serialize_outcomes,
 )
 
@@ -103,6 +105,8 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
         except NeedleBadRequest as err:
             _LOGGER.error("L'add-on ha rifiutato la richiesta: %s", err)
             speech = ERRORE_INTERNO
+        except _CondizioneNonVerificata:
+            speech = CONDIZIONE_NON_VERIFICATA
         else:
             speech = build_response(user_input.text, _unique(outcomes))
 
@@ -130,6 +134,15 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
             tool_inputs = self._tool_inputs(response, schemas, real_names)
             if not tool_inputs:
                 break
+            if (
+                is_condizionale(text)
+                and not outcomes
+                and any(tool_input.tool_name not in read_only for tool_input in tool_inputs)
+            ):
+                # Needle propone l'azione senza aver letto lo stato: la condizione
+                # non verrebbe mai controllata, quindi non eseguiamo nulla.
+                _LOGGER.debug("Condizione non verificata, azioni bloccate: %s", tool_inputs)
+                raise _CondizioneNonVerificata
             step: list[ToolOutcome] = []
             async for result in chat_log.async_add_assistant_content(
                 conversation.AssistantContent(agent_id=self.entity_id, tool_calls=tool_inputs)
@@ -198,6 +211,10 @@ class NeedleConversationEntity(conversation.ConversationEntity, conversation.Abs
             speech = result.response.speech.get("plain", {}).get("speech", "")
             result.response.async_set_speech(f"{AVVISO_FALLBACK} {speech}".strip())
         return result
+
+
+class _CondizioneNonVerificata(Exception):
+    """Frase condizionale con un'azione proposta prima di qualsiasi lettura."""
 
 
 def _unique(outcomes: list[ToolOutcome]) -> list[ToolOutcome]:

@@ -55,10 +55,13 @@ Se HACS non accetta il repository (contiene anche l'add-on), usa il metodo a man
 4. Nella scheda **Esponi** scegli le entità che Needle può leggere e comandare: solo quelle
    sono raggiungibili. Evita di esporre serrature, allarmi e cancelli.
 
-Prova con frasi come "accendi la luce del bagno", "spegni la cucina e accendi il salotto",
-"la luce del bagno è accesa?" o "se la temperatura del bagno è sopra 25 spegni il
-riscaldamento" (le condizioni vengono controllate in quel momento: non viene creata nessuna
-automazione).
+Prova con frasi come "accendi la luce del bagno", "spegni la cucina e accendi il salotto"
+o "la luce del bagno è accesa?".
+
+Le frasi condizionali ("se la luce del bagno è spenta accendi la camera") per ora sono
+**bloccate per sicurezza**: Needle propone l'azione senza verificare la condizione, quindi
+l'integrazione non esegue nulla e risponde "Non riesco ancora a verificare le condizioni".
+Dettagli nel README del progetto.
 
 ## Opzioni dell'add-on
 
@@ -83,6 +86,7 @@ Impostazioni → Dispositivi e servizi → Needle Local AI → **Configura**:
 | Le risposte iniziano con "⚠️ Needle non risponde" | add-on fermo, in caricamento o troppo lento: controlla il log o aumenta il timeout |
 | "Non trovo il dispositivo o non è esposto ad Assist" | entità non esposta, oppure Needle ha scelto un nome sbagliato |
 | "Non ho capito, posso aiutarti solo con i dispositivi di casa" | Needle non ha proposto nessun tool per la frase |
+| "Non riesco ancora a verificare le condizioni" | frase condizionale ("se … allora …") bloccata per sicurezza: dai il comando direttamente |
 
 Per i dettagli imposta `log_level: debug` in questo add-on e il logger
 `custom_components.needle` a `debug` in Home Assistant.

@@ -15,7 +15,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry, async_
 from custom_components.needle.client import NeedleBadRequest, NeedleUnavailable
 from custom_components.needle.const import CONF_MOSTRA_AVVISO, DOMAIN
 from custom_components.needle.config_flow import DEFAULT_OPTIONS
-from custom_components.needle.responses import AVVISO_FALLBACK, ERRORE_INTERNO, NON_DOMOTICA, NOTA_CONDIZIONALE
+from custom_components.needle.responses import CONDIZIONE_NON_VERIFICATA, AVVISO_FALLBACK, ERRORE_INTERNO, NON_DOMOTICA, NOTA_CONDIZIONALE
 
 AGENT = "conversation.needle_local_ai"
 
@@ -127,6 +127,35 @@ async def test_result_turn_uses_needle_names(hass, setup):
     with patch_infer(infer):
         await converse(hass, "se la temperatura del bagno è sopra 60 spegni la luce")
     assert '"tool": "GetLiveContext"' in seen[1][1]
+
+
+async def test_conditional_action_without_read_is_blocked(hass, setup):
+    on = async_mock_service(hass, "light", "turn_on")
+    mock = AsyncMock(side_effect=lambda tools, turni: needle_reply(call("HassTurnOn", name="Luce cucina")))
+    with patch("custom_components.needle.client.NeedleClient.infer", mock):
+        speech = await converse(hass, "se luce bagno spenta allora accendi la luce della cucina")
+    assert len(on) == 0
+    assert mock.await_count == 1
+    assert speech == CONDIZIONE_NON_VERIFICATA
+
+
+async def test_conditional_mixed_read_and_action_is_blocked(hass, setup):
+    on = async_mock_service(hass, "light", "turn_on")
+
+    async def infer(tools, turni):
+        return needle_reply(call("GetLiveContext", name="Luce bagno"), call("HassTurnOn", name="Luce cucina"))
+
+    with patch_infer(infer):
+        speech = await converse(hass, "se luce bagno spenta allora accendi la luce della cucina")
+    assert len(on) == 0
+    assert speech == CONDIZIONE_NON_VERIFICATA
+
+
+async def test_plain_action_not_blocked(hass, setup):
+    on = async_mock_service(hass, "light", "turn_on")
+    with patch_infer(lambda tools, turni: needle_reply(call("HassTurnOn", name="Luce cucina"))):
+        await converse(hass, "accendi la luce della cucina")
+    assert len(on) == 1
 
 
 async def test_action_step_ends_loop(hass, setup):

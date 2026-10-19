@@ -19,6 +19,10 @@ ERRORE_DISPOSITIVO = (
 )
 ERRORE_GENERICO = "Non sono riuscito a eseguire il comando."
 NOTA_CONDIZIONALE = "Ho controllato ora, non ho creato una regola."
+CONDIZIONE_NON_VERIFICATA = (
+    "Non riesco ancora a verificare le condizioni, quindi non ho fatto nulla. "
+    "Dimmi direttamente cosa fare."
+)
 
 MAX_ENTITA_LETTE = 5
 
@@ -73,10 +77,15 @@ def serialize_outcomes(outcomes: list[ToolOutcome]) -> str:
     )
 
 
+def is_condizionale(query: str) -> bool:
+    """Frase del tipo "se … allora …": un'azione va eseguita solo dopo aver letto lo stato."""
+    return bool(_CONDIZIONALE.match(query))
+
+
 def build_response(query: str, outcomes: list[ToolOutcome]) -> str:
     if not outcomes:
         return NON_DOMOTICA
-    condizionale = bool(_CONDIZIONALE.match(query))
+    condizionale = is_condizionale(query)
     azioni = [o for o in outcomes if not o.read_only]
     if azioni:
         testo = " ".join(_descrivi_azione(o) for o in azioni)
