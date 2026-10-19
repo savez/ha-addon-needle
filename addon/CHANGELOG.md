@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/savez/ha-addon-needle/compare/v0.1.2...v0.1.3) (2026-10-19)
+
+
+### Bug Fixes
+
+* alza il timeout predefinito verso l'add-on a 10 secondi ([#6](https://github.com/savez/ha-addon-needle/issues/6)) ([45b2e22](https://github.com/savez/ha-addon-needle/commit/45b2e22e09b36f4d5d2800f6b8cee0966eb07642))
+
 ## [0.1.2](https://github.com/savez/ha-addon-needle/compare/v0.1.1...v0.1.2) (2026-10-19)
 
 
