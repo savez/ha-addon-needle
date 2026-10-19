@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/savez/ha-addon-needle/compare/v0.3.0...v0.3.1) (2026-10-19)
+
+
+### Bug Fixes
+
+* usa EmbeddingGemma 300M, la versione 2 non è supportata da llama.cpp ([#14](https://github.com/savez/ha-addon-needle/issues/14)) ([419e60f](https://github.com/savez/ha-addon-needle/commit/419e60f695e2ad596b31a0295927bc9641b50c7b))
+
 ## [0.3.0](https://github.com/savez/ha-addon-needle/compare/v0.2.1...v0.3.0) (2026-10-19)
 
 
