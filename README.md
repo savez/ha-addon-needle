@@ -186,6 +186,12 @@ col modello vero (scarica ~35 MB) si lancia con `.venv-addon/bin/pytest addon/te
 - Non è ancora verificato che HACS accetti questo repository (contiene sia l'add-on sia
   l'integrazione): in caso di problemi installa l'integrazione copiando la cartella.
 
+## Roadmap
+
+Prossimi passi e ragionamenti in [ROADMAP.md](ROADMAP.md): tool generati per Needle dalla
+casa, fine-tuning di Needle sui tool di Home Assistant aggiornato a ogni versione, condizioni
+verificate dall'integrazione, Needle come tool MCP.
+
 ## Crediti e licenza
 
 - Modello e libreria: [Needle](https://github.com/cactus-compute/needle) di Cactus Compute
