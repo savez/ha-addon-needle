@@ -71,7 +71,7 @@ Assist ──► integrazione Needle ──(frase + tool)──► add-on Needle
 Opzioni dell'add-on:
 
 - `log_level` (`debug`, `info`, `warning`, `error`);
-- `ricerca_entita` (default `true`): **EmbeddingGemma 2** (270M, GGUF Q8, circa 310 MB)
+- `ricerca_entita` (default `true`): **EmbeddingGemma** (300M, GGUF Q8, circa 334 MB)
   sostituisce il nome o l'area estratti da Needle con l'entità o l'area reale più vicina tra
   quelle esposte, così "luce del bagnetto" diventa "Luce bagno". Needle sceglie *cosa fare*,
   EmbeddingGemma *su cosa*. Vale anche per le chiamate che Needle scarta per bassa confidenza;

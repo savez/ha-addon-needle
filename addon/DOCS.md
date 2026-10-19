@@ -66,8 +66,8 @@ Dettagli nel README del progetto.
 ## Opzioni dell'add-on
 
 - `log_level`: `debug`, `info`, `warning`, `error`.
-- `ricerca_entita` (default `true`): usa **EmbeddingGemma 2** (270M, solo testo, GGUF Q8,
-  circa 310 MB scaricati al primo avvio in `/data/embedding`) per sostituire il nome o l'area
+- `ricerca_entita` (default `true`): usa **EmbeddingGemma** (300M, GGUF Q8,
+  circa 334 MB scaricati al primo avvio in `/data/embedding`) per sostituire il nome o l'area
   estratti da Needle ("bagnetto", "temperatrua cameretta") con l'entità o l'area reale più
   vicina tra quelle esposte ad Assist. Se il modello non si carica, l'add-on continua senza.
 - `soglia_entita` (default `0.5`): similarità minima (0–1) tra il valore estratto e l'entità
