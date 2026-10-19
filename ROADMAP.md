@@ -15,7 +15,7 @@ domande con i comandi (es. "temperatura bagno" → imposta il termostato).
 | Tool dati a Needle | Tool e argomenti giusti |
 |---|---|
 | Tool dell'API Assist | domande sullo stato quasi sempre sbagliate o scartate |
-| Pochi tool concreti, descrizioni in inglese con esempi, valori ammessi presi dalla casa | 18/25 (72%), domande su temperatura e umidità 6/6 |
+| Pochi tool concreti, descrizioni in inglese con esempi, valori ammessi presi dalla casa | 18/25 (72%, prova preliminare su una casa reale), domande su temperatura e umidità 6/6 |
 
 **Soluzione.** L'integrazione genera da ogni installazione un piccolo insieme di tool "alla
 Needle" (`lights`, `air_conditioner`, `media`, `device`, `vacuum`, `get_temperature`,
@@ -28,22 +28,24 @@ un tool sposta gli errori. Casi ancora deboli sono "tutte le luci", "fuori", le 
 poco leggibili e le domande sì/no sulle luci. Una prova con due passaggi (prima la categoria,
 poi il tool) è andata peggio (9/25) ed è stata scartata.
 
-**Risultato.** Implementata in 1.0.0 con l'opzione `strumenti` (`generati` o `assist`) e due
-protezioni temporanee, solo italiano (domanda → azione, dispositivo non nominato). Benchmark
-generico (casa finta, 25 frasi, pesi base, 3 esecuzioni identiche):
+**Risultato.** Implementata in 1.0.0 con l'opzione `strumenti` (`generati` o `assist`) e tre
+protezioni temporanee, solo italiano (domanda → azione, dispositivo non nominato, tipo di
+dispositivo sbagliato). Benchmark generico (casa finta, 25 frasi, pesi base). Le risposte del
+modello cambiano un po' da un avvio dell'add-on all'altro, a parità di tool; due avvii:
 
-| Metrica | Risultato |
-|---|---|
-| Tool corretti | 20/25 |
-| Tool e argomenti corretti | 17/25 (l'obiettivo era 18/25: non raggiunto) |
-| Scartate | 1/25 |
-| Azioni pericolose sulle frasi marcate | 0 dopo le protezioni (2 prima) |
-| Azioni sbagliate eseguite su tutte le frasi | 3 dopo le protezioni (5 prima) |
+| Metrica | Avvio A (3 esecuzioni identiche) | Avvio B |
+|---|---|---|
+| Tool corretti | 22/25 | 21/25 |
+| Tool e argomenti corretti | 19/25 | 18/25 |
+| Scartate | 2/25 | 1/25 |
+| Azioni pericolose sulle frasi marcate | 0 dopo le protezioni (1 prima) | 0 dopo le protezioni (2 prima) |
+| Azioni sbagliate eseguite su tutte le frasi | 1 dopo le protezioni (3 prima) | 1 dopo le protezioni (4 prima) |
 
-Le 3 azioni sbagliate residue: "accendi la luce del bagno" e "accendi la luce del bagnetto"
-accendono il condizionatore della camera; "alza il volume" mette in pausa. Le protezioni non
-le fermano. Il rimedio previsto è il fine-tuning (voce 2); con `strumenti: assist` si torna al
-comportamento precedente.
+L'azione sbagliata residua: "alza il volume" mette in pausa (stesso tipo di dispositivo, le
+protezioni non la fermano). La luce interpretata come condizionatore è fermata dalla
+protezione sul tipo di dispositivo. Il rimedio previsto è il fine-tuning (voce 2); con
+`strumenti: assist` si usano i tool dell'API Assist, senza la ricerca a parole delle versioni
+precedenti.
 
 ## 2. Fine-tuning di Needle sui tool di Home Assistant, aggiornato a ogni versione
 

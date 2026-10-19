@@ -88,7 +88,7 @@ Impostazioni → Dispositivi e servizi → Needle Local AI → **Configura**:
 | "Non trovo il dispositivo o non è esposto ad Assist" | entità non esposta, oppure Needle ha scelto un nome sbagliato |
 | "Non ho capito, posso aiutarti solo con i dispositivi di casa" | Needle non ha proposto nessun tool per la frase, o ha scartato un'azione perché poco sicuro: riformula con un verbo ("dimmi la temperatura della camera") |
 | "Non ho capito se è una domanda o un comando: puoi riformulare?" | protezione: la frase sembra una domanda ma Needle ha proposto un'azione, che non viene eseguita. Riformula ("com'è la temperatura in camera?" oppure "accendi la luce") |
-| "Non sono sicuro del dispositivo: puoi dirmi il nome?" | protezione: la frase non nomina il dispositivo scelto (prese, ventilatori, aspirapolvere): dì il nome, ad esempio "accendi la presa del balcone"; la sola parola "presa" non basta se ce n'è più di una |
+| "Non sono sicuro del dispositivo: puoi dirmi il nome?" | protezione: la frase non nomina il dispositivo scelto (prese, ventilatori, aspirapolvere), oppure Needle ha scelto un tipo di dispositivo diverso da quello della frase (es. condizionatore per "luce"): dì il nome, ad esempio "accendi la presa del balcone"; la sola parola "presa" non basta se ce n'è più di una |
 | "Non riesco ancora a verificare le condizioni" | frase condizionale ("se … allora …") bloccata per sicurezza: dai il comando direttamente |
 
 ### Log di debug
@@ -106,7 +106,10 @@ Se il log resta vuoto quando parli ad Assist, la richiesta non arriva
 all'add-on: di solito l'URL dell'integrazione è sbagliato. Per i dettagli lato
 Home Assistant usa **Attiva il debug** nella pagina dell'integrazione.
 
-Le due protezioni valgono solo per l'italiano e sono temporanee, in attesa del fine-tuning.
+Le protezioni valgono solo per l'italiano e sono temporanee, in attesa del fine-tuning.
+
+Se alleghi la diagnostica dell'integrazione a una segnalazione, ricorda che contiene i tool
+generati, quindi i nomi delle tue entità e delle tue aree: controllala prima di pubblicarla.
 
 Il progetto è sperimentale: con il modello base l'accuratezza è ancora bassa. Documentazione
 completa, benchmark e segnalazioni: <https://github.com/savez/ha-addon-needle>.
