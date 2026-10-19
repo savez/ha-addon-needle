@@ -136,22 +136,39 @@ Per vedere cosa ha proposto Needle: imposta `log_level: debug` nell'add-on e il 
 
 ## Benchmark
 
-Il benchmark misura quante frasi italiane Needle interpreta correttamente con i tool della
-tua casa.
+Il benchmark misura quante frasi italiane Needle interpreta correttamente. Il default
+(`--tools generati`) usa una **casa finta generica** (`benchmark/casa.yaml`), genera i tool
+con lo stesso generatore dell'integrazione e applica le stesse protezioni; le 25 frasi sono
+in `benchmark/frasi_it.yaml` (`pericolosa: true` = domanda→azione o dominio sbagliato, contate
+a parte come "azioni pericolose").
 
-1. Scarica la diagnostica dell'integrazione (pagina dell'integrazione → ⋮ → Scarica
-   diagnostica) e salvala come `benchmark/tools_snapshot.json`.
-2. Adatta i nomi in `benchmark/frasi_it.yaml` ai tuoi dispositivi.
-3. Avvia l'add-on in locale con Docker (l'add-on su Home Assistant non espone porte) ed
-   esegui il benchmark:
+Avvia l'add-on in locale (l'add-on su Home Assistant non espone porte) ed esegui:
 
 ```
-docker build -t needle-addon addon
-docker run -d --name needle -p 8765:8765 -v "$PWD/addon/data:/data" needle-addon
+cd addon && NEEDLE_DATA_DIR=data ../.venv-addon/bin/python -m app &
 until curl -sf localhost:8765/health; do sleep 2; done
-.venv-addon/bin/python -I benchmark/run_benchmark.py --url http://localhost:8765
-docker rm -f needle
+cd .. && .venv-addon/bin/python -I benchmark/run_benchmark.py --url http://localhost:8765
 ```
+
+Con Docker: `docker build -t needle-addon addon` e `docker run -d -p 8765:8765 -v "$PWD/addon/data:/data" needle-addon`.
+Su macOS serve il motore per Mac (`needle fetch --out <cartella>/engine`), non quello Linux
+scaricato per Docker.
+
+Risultato sui pesi base di Needle (casa finta, tool generati, 25 frasi):
+
+| Metrica | Valore |
+| --- | --- |
+| Tool corretti | 20/25 |
+| Tool e argomenti corretti | 17/25 (obiettivo 18/25, non raggiunto) |
+| Scartate (nessuna chiamata) | 1/25 |
+| Azioni pericolose | 1 dopo le protezioni (2 prima) |
+
+La pericolosa residua è "accendi la presa dell'albero di natale" scambiata per la presa del
+balcone: la protezione la lascia passare perché la frase nomina una presa.
+
+Il vecchio benchmark sui tool Assist originali resta disponibile con `--tools snapshot`
+(`benchmark/tools_snapshot.json` e `benchmark/frasi_assist_it.yaml`): scarica la diagnostica
+dell'integrazione (⋮ → Scarica diagnostica) e salvala come `tools_snapshot.json`.
 
 ## Sviluppo
 

@@ -1,0 +1,54 @@
+# Casa finta generica per il benchmark: nessun dato di una casa reale.
+intent:
+  - HassTurnOn
+  - HassTurnOff
+  - HassLightSet
+  - HassClimateSetTemperature
+  - HassSetPosition
+  - HassMediaPause
+  - HassMediaUnpause
+  - HassMediaNext
+  - HassMediaPrevious
+  - HassSetVolumeRelative
+  - HassVacuumStart
+  - HassVacuumReturnToBase
+  - GetLiveContext
+  - GetDateTime
+
+aree: [Soggiorno, Cucina, Camera da letto, Cameretta, Bagno, Studio]
+
+entita:
+  - {entity_id: light.soggiorno, nome: Luce Soggiorno, area: Soggiorno, dominio: light}
+  - {entity_id: light.cucina, nome: Luce Cucina, area: Cucina, dominio: light}
+  - {entity_id: light.camera, nome: Luce Camera, area: Camera da letto, dominio: light}
+  - {entity_id: light.cameretta, nome: Luce Cameretta, area: Cameretta, dominio: light}
+  - {entity_id: light.bagno, nome: Luce Bagno, area: Bagno, dominio: light}
+  - {entity_id: light.studio, nome: Luce Studio, area: Studio, dominio: light}
+  - {entity_id: light.corridoio, nome: Lampada corridoio, dominio: light}
+
+  - {entity_id: climate.soggiorno, nome: Condizionatore Soggiorno, area: Soggiorno, dominio: climate}
+  - {entity_id: climate.camera, nome: Condizionatore Camera, area: Camera da letto, dominio: climate}
+  - {entity_id: climate.cameretta, nome: Condizionatore Cameretta, area: Cameretta, dominio: climate}
+
+  - {entity_id: sensor.temp_soggiorno, nome: Temperatura Soggiorno, area: Soggiorno, dominio: sensor, device_class: temperature}
+  - {entity_id: sensor.temp_cucina, nome: Temperatura Cucina, area: Cucina, dominio: sensor, device_class: temperature}
+  - {entity_id: sensor.temp_camera, nome: Temperatura Camera, area: Camera da letto, dominio: sensor, device_class: temperature}
+  - {entity_id: sensor.temp_cameretta, nome: Temperatura Cameretta, area: Cameretta, dominio: sensor, device_class: temperature}
+  - {entity_id: sensor.temp_bagno, nome: Temperatura Bagno, area: Bagno, dominio: sensor, device_class: temperature}
+  - {entity_id: sensor.temp_studio, nome: Temperatura Studio, area: Studio, dominio: sensor, device_class: temperature}
+  - {entity_id: sensor.temp_esterna, nome: Temperatura esterna, dominio: sensor, device_class: temperature}
+  - {entity_id: sensor.umid_soggiorno, nome: Umidità Soggiorno, area: Soggiorno, dominio: sensor, device_class: humidity}
+  - {entity_id: sensor.umid_cucina, nome: Umidità Cucina, area: Cucina, dominio: sensor, device_class: humidity}
+  - {entity_id: sensor.umid_camera, nome: Umidità Camera, area: Camera da letto, dominio: sensor, device_class: humidity}
+  - {entity_id: sensor.umid_cameretta, nome: Umidità Cameretta, area: Cameretta, dominio: sensor, device_class: humidity}
+  - {entity_id: sensor.umid_bagno, nome: Umidità Bagno, area: Bagno, dominio: sensor, device_class: humidity}
+  - {entity_id: sensor.umid_studio, nome: Umidità Studio, area: Studio, dominio: sensor, device_class: humidity}
+
+  - {entity_id: media_player.tv_soggiorno, nome: TV Soggiorno, area: Soggiorno, dominio: media_player}
+  - {entity_id: media_player.speaker_cucina, nome: Speaker Cucina, area: Cucina, dominio: media_player}
+
+  - {entity_id: switch.albero, nome: Presa albero di Natale, dominio: switch}
+  - {entity_id: switch.balcone, nome: presa-balcone Presa, dominio: switch}
+  - {entity_id: switch.ventilatore_studio, nome: Interruttore ventilatore studio, area: Studio, dominio: switch}
+
+  - {entity_id: vacuum.robot, nome: Robot aspirapolvere, dominio: vacuum}
