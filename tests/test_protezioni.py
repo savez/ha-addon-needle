@@ -96,17 +96,16 @@ class TestEDomanda:
         """Test different apostrophe characters (typographic variants)."""
         # Regular apostrophe
         assert e_domanda("c'è la luce") is True
-        # Typographic apostrophes
-        assert e_domanda("c'è la luce") is True  # right single quotation mark
-        assert e_domanda("c'è la luce") is True  # modifier letter apostrophe (ʼ)
+        # Typographic apostrophes (U+2019 right single quotation mark)
+        assert e_domanda("c’è la luce") is True
+        # Modifier letter apostrophe (U+02BC)
+        assert e_domanda("cʼè la luce") is True
         # Backtick
         assert e_domanda("c`è la luce") is True
-        # With E' (capital E with apostrophe)
-        assert e_domanda("E' accesa") is True
-        assert e_domanda("E' accesa") is True
-        # With com'è
-        assert e_domanda("com'è la temperatura") is True
-        assert e_domanda("com'è la temperatura") is True
+        # With E' (capital E with U+2019 apostrophe)
+        assert e_domanda("E’ accesa") is True
+        # With com'è (U+2019)
+        assert e_domanda("com’è la temperatura") is True
 
     def test_trailing_punctuation_in_first_word(self):
         """Test that trailing punctuation is stripped from first word."""

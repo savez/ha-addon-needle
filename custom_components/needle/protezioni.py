@@ -13,7 +13,8 @@ def _strip_accents(text: str) -> str:
 def _normalize_apostrophes(text: str) -> str:
     """Normalize different apostrophe characters to the standard one."""
     # Replace all apostrophe variants with the standard apostrophe
-    return text.replace("'", "'").replace("'", "'").replace("ʼ", "'").replace("`", "'")
+    # U+2019 (right single quotation mark), U+02BC (modifier letter apostrophe), backtick
+    return text.replace("'", "'").replace("’", "'").replace("ʼ", "'").replace("`", "'")
 
 
 # Italian interrogative words
