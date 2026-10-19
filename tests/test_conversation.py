@@ -17,7 +17,7 @@ from custom_components.needle.const import CONF_MOSTRA_AVVISO, DOMAIN
 from custom_components.needle.config_flow import DEFAULT_OPTIONS
 from custom_components.needle.responses import AVVISO_FALLBACK, ERRORE_INTERNO, NON_DOMOTICA, NOTA_CONDIZIONALE
 
-AGENT = "conversation.needle"
+AGENT = "conversation.needle_local_ai"
 
 
 def tool_name(tools, suffix):

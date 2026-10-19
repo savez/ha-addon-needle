@@ -1,6 +1,6 @@
 {
   "domain": "needle",
-  "name": "Needle",
+  "name": "Needle Local AI",
   "after_dependencies": ["assist_pipeline", "intent"],
   "codeowners": ["@savez"],
   "config_flow": true,

@@ -2,7 +2,7 @@
   "config": {
     "step": {
       "user": {
-        "title": "Needle",
+        "title": "Needle Local AI",
         "description": "URL of the Needle add-on.",
         "data": { "url": "URL" }
       }
@@ -13,7 +13,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Needle options",
+        "title": "Needle Local AI options",
         "data": {
           "llm_hass_api": "Home Assistant APIs available to Needle",
           "mostra_avviso_fallback": "Show a warning when falling back to the default agent",

@@ -1,4 +1,4 @@
-# Contribuire a Needle per Home Assistant
+# Contribuire a Needle Local AI
 
 > **English** — Contributions are welcome. Open an issue first for anything beyond a small
 > fix, work on a branch of your fork, add tests, and open a pull request against `main`.

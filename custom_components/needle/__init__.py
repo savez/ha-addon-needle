@@ -1,4 +1,4 @@
-"""Integrazione Needle per Home Assistant."""
+"""Integrazione Needle Local AI per Home Assistant."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# Needle
+# Needle Local AI
 
 Motore di inferenza locale per l'agente conversazionale Needle di Assist.
 
