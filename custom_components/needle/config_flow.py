@@ -19,6 +19,7 @@ from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
+    SelectSelectorMode,
     TextSelector,
 )
 
@@ -26,13 +27,16 @@ from .client import NeedleClient, NeedleUnavailable
 from .const import (
     CONF_MAX_PASSI,
     CONF_MOSTRA_AVVISO,
+    CONF_STRUMENTI,
     CONF_TIMEOUT_S,
     DEFAULT_LLM_API,
     DEFAULT_MAX_PASSI,
     DEFAULT_MOSTRA_AVVISO,
+    DEFAULT_STRUMENTI,
     DEFAULT_TIMEOUT_S,
     DEFAULT_URL,
     DOMAIN,
+    VALORI_STRUMENTI,
 )
 
 DEFAULT_OPTIONS: dict[str, Any] = {
@@ -40,6 +44,7 @@ DEFAULT_OPTIONS: dict[str, Any] = {
     CONF_MOSTRA_AVVISO: DEFAULT_MOSTRA_AVVISO,
     CONF_MAX_PASSI: DEFAULT_MAX_PASSI,
     CONF_TIMEOUT_S: DEFAULT_TIMEOUT_S,
+    CONF_STRUMENTI: DEFAULT_STRUMENTI,
 }
 
 
@@ -105,5 +110,14 @@ def _options_schema(hass: HomeAssistant, options: dict[str, Any]) -> probatio.Sc
             probatio.Required(
                 CONF_TIMEOUT_S, default=options.get(CONF_TIMEOUT_S, DEFAULT_TIMEOUT_S)
             ): NumberSelector(NumberSelectorConfig(min=1, max=30, step=1, mode=NumberSelectorMode.BOX)),
+            probatio.Required(
+                CONF_STRUMENTI, default=options.get(CONF_STRUMENTI, DEFAULT_STRUMENTI)
+            ): SelectSelector(
+                SelectSelectorConfig(
+                    options=list(VALORI_STRUMENTI),
+                    translation_key=CONF_STRUMENTI,
+                    mode=SelectSelectorMode.DROPDOWN,
+                )
+            ),
         }
     )

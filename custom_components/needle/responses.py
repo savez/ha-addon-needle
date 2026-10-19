@@ -7,8 +7,9 @@ import json
 import re
 from typing import Any
 
+import yaml
+
 from .convert import base_name
-from .ricerca import parse_live_context
 
 NON_DOMOTICA = "Non ho capito, posso aiutarti solo con i dispositivi di casa."
 ERRORE_INTERNO = "Errore interno di Needle."
@@ -22,6 +23,8 @@ CONDIZIONE_NON_VERIFICATA = (
     "Non riesco ancora a verificare le condizioni, quindi non ho fatto nulla. "
     "Dimmi direttamente cosa fare."
 )
+DOMANDA_O_COMANDO = "Non ho capito se è una domanda o un comando: puoi riformulare?"
+DISPOSITIVO_INCERTO = "Non sono sicuro del dispositivo: puoi dirmi il nome?"
 
 MAX_ENTITA_LETTE = 5
 
@@ -74,6 +77,18 @@ def serialize_outcomes(outcomes: list[ToolOutcome]) -> str:
         ensure_ascii=False,
         default=str,
     )
+
+
+def parse_live_context(data: dict[str, Any]) -> tuple[str, list[dict[str, Any]]]:
+    """Separa l'intestazione dall'elenco YAML delle entità di GetLiveContext."""
+    header, _, body = str(data.get("result") or "").partition("\n")
+    try:
+        parsed = yaml.safe_load(body)
+    except yaml.YAMLError:
+        return header, []
+    if not isinstance(parsed, list):
+        return header, []
+    return header, [item for item in parsed if isinstance(item, dict)]
 
 
 def is_condizionale(query: str) -> bool:

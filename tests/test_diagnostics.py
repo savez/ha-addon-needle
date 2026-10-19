@@ -1,4 +1,5 @@
 """Test della diagnostica."""
+from homeassistant.components.homeassistant.exposed_entities import async_expose_entity
 from homeassistant.const import CONF_URL
 from homeassistant.setup import async_setup_component
 
@@ -12,7 +13,9 @@ from custom_components.needle.diagnostics import async_get_config_entry_diagnost
 async def test_diagnostics_exports_tools(hass):
     assert await async_setup_component(hass, "homeassistant", {})
     assert await async_setup_component(hass, "intent", {})
+    assert await async_setup_component(hass, "conversation", {})
     hass.states.async_set("light.bagno", "on", {"friendly_name": "Luce bagno"})
+    async_expose_entity(hass, "conversation", "light.bagno", True)
     entry = MockConfigEntry(domain=DOMAIN, data={CONF_URL: "http://needle.test:8765"}, options=dict(DEFAULT_OPTIONS))
     entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(entry.entry_id)
@@ -24,3 +27,6 @@ async def test_diagnostics_exports_tools(hass):
     assert any(name.endswith("GetLiveContext") for name in names)
     assert not any("__" in name for name in names)
     assert result["options"]["max_passi"] == 5
+    generati = [tool["name"] for tool in result["strumenti_generati"]]
+    assert "lights" in generati
+    assert not any(name.startswith("Hass") or "__" in name for name in generati)
