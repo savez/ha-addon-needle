@@ -122,9 +122,9 @@ class TestDispositivoNominato:
     def test_vacuum_entity_name_in_phrase(self):
         """Test vacuum tool with entity name in phrase."""
         # "Robot" should match "robot" when split and lowercased
-        assert dispositivo_nominato("avvia il robot", "vacuum", "Roborock") is True
-        # Entity name words (>= 3 chars): "Nettino" -> "nettino"
-        assert dispositivo_nominato("manda nettino alla base", "vacuum", "Nettino") is True
+        assert dispositivo_nominato("avvia il robot", "vacuum", "Robotix") is True
+        # Entity name words (>= 3 chars): "Robby" -> "robby"
+        assert dispositivo_nominato("manda robby alla base", "vacuum", "Robby") is True
 
     def test_vacuum_entity_name_not_in_phrase(self):
         """Test vacuum tool with entity name not in phrase."""
@@ -133,10 +133,10 @@ class TestDispositivoNominato:
 
     def test_device_entity_words_in_phrase(self):
         """Test device tool with entity words in phrase."""
-        # "presa-balcone-sala Presa" splits to ["presa", "balcone", "sala", "Presa"]
+        # "presa-terrazzo-sala Presa" splits to ["presa", "terrazzo", "sala", "Presa"]
         # Words >= 3 chars: "presa", "balcone", "sala"
         # Phrase contains "presa"
-        assert dispositivo_nominato("accendi la presa del balcone", "device", "presa-balcone-sala Presa") is True
+        assert dispositivo_nominato("accendi la presa del terrazzo", "device", "presa-terrazzo-sala Presa") is True
 
     def test_vacuum_synonym_in_phrase(self):
         """Test vacuum tool with synonym in phrase."""
@@ -185,8 +185,8 @@ class TestDispositivoNominato:
 
     def test_case_insensitive_entity(self):
         """Test that entity name matching is case insensitive."""
-        assert dispositivo_nominato("avvia il ROBOT", "vacuum", "Roborock") is True
-        assert dispositivo_nominato("avvia il Robot", "vacuum", "roborock") is True
+        assert dispositivo_nominato("avvia il ROBOT", "vacuum", "Robotix") is True
+        assert dispositivo_nominato("avvia il Robot", "vacuum", "robotix") is True
 
     def test_accents_stripped(self):
         """Test that accents are stripped when comparing."""
@@ -210,10 +210,10 @@ class TestDispositivoNominato:
 
     def test_special_characters_split(self):
         """Test splitting on special characters."""
-        # "presa-balcone-sala Presa" splits by non-alphanumeric
+        # "presa-terrazzo-sala Presa" splits by non-alphanumeric
         # Should split into: presa, balcone, sala, presa
-        assert dispositivo_nominato("accendi la presa", "device", "presa-balcone-sala") is False
-        assert dispositivo_nominato("accendi il balcone", "device", "presa-balcone-sala") is True
+        assert dispositivo_nominato("accendi la presa", "device", "presa-terrazzo-sala") is False
+        assert dispositivo_nominato("accendi il terrazzo", "device", "presa-terrazzo-sala") is True
 
 
 class TestPreposizioniArticolate:
