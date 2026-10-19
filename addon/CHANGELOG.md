@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/savez/ha-addon-needle/compare/v0.2.1...v0.3.0) (2026-10-19)
+
+
+### Features
+
+* risoluzione dei nomi di entità e aree con EmbeddingGemma 2 ([#12](https://github.com/savez/ha-addon-needle/issues/12)) ([b85a1e6](https://github.com/savez/ha-addon-needle/commit/b85a1e68743c88fb3010ded779dbcf7f3e747f11))
+
 ## [0.2.1](https://github.com/savez/ha-addon-needle/compare/v0.2.0...v0.2.1) (2026-10-19)
 
 

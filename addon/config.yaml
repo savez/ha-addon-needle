@@ -1,5 +1,5 @@
 name: Needle Local AI
-version: 0.2.1
+version: 0.3.0
 slug: needle
 description: Motore conversazionale locale per Assist basato su Needle 3
 url: https://github.com/savez/ha-addon-needle
