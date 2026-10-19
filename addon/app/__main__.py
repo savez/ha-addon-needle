@@ -47,7 +47,7 @@ def _risolutore() -> Risolutore | None:
         _LOGGER.exception("EmbeddingGemma non disponibile: continuo senza")
         return None
     soglia = float(options.get("soglia_entita", 0.5))
-    _LOGGER.info("EmbeddingGemma 2 pronto (soglia %.2f)", soglia)
+    _LOGGER.info("EmbeddingGemma pronto (soglia %.2f)", soglia)
     return Risolutore(embedder, soglia)
 
 
