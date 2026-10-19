@@ -1,5 +1,6 @@
-ARG BUILD_FROM=python:3.13-slim
-FROM ${BUILD_FROM}
+# Immagine base indicata qui (build.yaml è deprecato in Supervisor):
+# Debian/glibc, richiesta dall'engine prebuilt di Needle (manylinux).
+FROM python:3.13-slim
 
 ENV NEEDLE_TELEMETRY=0 \
     PYTHONUNBUFFERED=1 \
